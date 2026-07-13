@@ -25,6 +25,29 @@ export interface RiskAnalysis {
   breakdown: RiskBreakdown;
 }
 
+export interface WeatherStation {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  temperature: number; // in Celsius
+  humidity: number; // %
+  windSpeed: number; // km/h
+  windDirection: number; // in degrees
+  condition: 'sunny' | 'cloudy' | 'rainy' | 'stormy' | 'cyclonic' | 'foggy';
+  pressure: number; // hPa
+  lastUpdated: string;
+}
+
+export interface RSSArticle {
+  title: string;
+  link: string;
+  pubDate: string;
+  description: string;
+  thumbnail: string;
+  source: string;
+}
+
 interface MonitorState {
   // Map View
   viewState: ViewState;
@@ -36,8 +59,9 @@ interface MonitorState {
     criticalAssets: boolean;
     shippingCorridors: boolean;
     waterways: boolean;
+    weather: boolean; // added weather layer
   };
-  toggleLayer: (layerKey: 'incidents' | 'criticalAssets' | 'shippingCorridors' | 'waterways') => void;
+  toggleLayer: (layerKey: 'incidents' | 'criticalAssets' | 'shippingCorridors' | 'waterways' | 'weather') => void;
 
   // Active Telemetry/Operational Data
   incidents: DBIncident[];
@@ -46,6 +70,17 @@ interface MonitorState {
   setIncidents: (incidents: DBIncident[]) => void;
   setCriticalAssets: (assets: DBCriticalAsset[]) => void;
   setNews: (news: DBOperationalNews[]) => void;
+
+  // Weather Telemetry
+  weatherStations: WeatherStation[];
+  setWeatherStations: (stations: WeatherStation[]) => void;
+  updateWeatherStations: () => void; // call to simulate continuous sensor updates
+
+  // Live RSS Feed News
+  rssArticles: RSSArticle[];
+  rssLoading: boolean;
+  setRssArticles: (articles: RSSArticle[]) => void;
+  setRssLoading: (loading: boolean) => void;
 
   // Selection
   selectedFeature: any | null;
@@ -74,6 +109,100 @@ interface MonitorState {
   setRiskAnalysis: (analysis: RiskAnalysis) => void;
 }
 
+const initialWeatherStations: WeatherStation[] = [
+  {
+    id: 'weather-dhaka',
+    name: 'Dhaka Meteorology HQ',
+    lat: 23.6850,
+    lng: 90.3563,
+    temperature: 31.5,
+    humidity: 78,
+    windSpeed: 14,
+    windDirection: 180, // South wind
+    condition: 'cloudy',
+    pressure: 1008,
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: 'weather-cox',
+    name: 'Cox\'s Bazar Marine Center',
+    lat: 21.4272,
+    lng: 91.9702,
+    temperature: 28.2,
+    humidity: 94,
+    windSpeed: 45, // Strong wind
+    windDirection: 210, // South-Southwest
+    condition: 'cyclonic',
+    pressure: 994,
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: 'weather-sylhet',
+    name: 'Sylhet Hydrology Station',
+    lat: 24.8949,
+    lng: 91.8687,
+    temperature: 26.8,
+    humidity: 98,
+    windSpeed: 18,
+    windDirection: 135, // Southeast
+    condition: 'stormy',
+    pressure: 1002,
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: 'weather-mongla',
+    name: 'Mongla Port Radar Dome',
+    lat: 22.4800,
+    lng: 89.6000,
+    temperature: 29.0,
+    humidity: 88,
+    windSpeed: 32,
+    windDirection: 190,
+    condition: 'rainy',
+    pressure: 1004,
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: 'weather-rajshahi',
+    name: 'Rajshahi Agro-Met Observatory',
+    lat: 24.3745,
+    lng: 88.6011,
+    temperature: 34.2,
+    humidity: 58,
+    windSpeed: 8,
+    windDirection: 90, // East
+    condition: 'sunny',
+    pressure: 1011,
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: 'weather-rangpur',
+    name: 'Rangpur Northern Boundary Station',
+    lat: 25.7439,
+    lng: 89.2752,
+    temperature: 30.1,
+    humidity: 72,
+    windSpeed: 12,
+    windDirection: 120,
+    condition: 'cloudy',
+    pressure: 1009,
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: 'weather-barisal',
+    name: 'Barisal Coastal Tide Center',
+    lat: 22.7010,
+    lng: 90.3535,
+    temperature: 29.5,
+    humidity: 85,
+    windSpeed: 24,
+    windDirection: 200,
+    condition: 'rainy',
+    pressure: 1006,
+    lastUpdated: new Date().toISOString(),
+  }
+];
+
 export const useStore = create<MonitorState>((set) => ({
   // Initialize view precisely at Bangladesh center: Lat 23.6850, Lng 90.3563, Zoom 6.5
   viewState: {
@@ -91,6 +220,7 @@ export const useStore = create<MonitorState>((set) => ({
     criticalAssets: true,
     shippingCorridors: true,
     waterways: true,
+    weather: true, // weather layer visible by default
   },
   toggleLayer: (layerKey) =>
     set((state) => ({
@@ -107,6 +237,44 @@ export const useStore = create<MonitorState>((set) => ({
   setIncidents: (incidents) => set({ incidents }),
   setCriticalAssets: (criticalAssets) => set({ criticalAssets }),
   setNews: (news) => set({ news }),
+
+  // Weather States
+  weatherStations: initialWeatherStations,
+  setWeatherStations: (weatherStations) => set({ weatherStations }),
+  updateWeatherStations: () =>
+    set((state) => {
+      const updated = state.weatherStations.map((station) => {
+        // Slightly fluctuate parameters dynamically to represent real-time updates
+        const tempDelta = (Math.random() - 0.5) * 0.4;
+        const windSpeedDelta = (Math.random() - 0.5) * 2;
+        const windDirDelta = Math.floor((Math.random() - 0.5) * 10);
+        const humidityDelta = Math.floor((Math.random() - 0.5) * 3);
+        const pressureDelta = (Math.random() - 0.5) * 1;
+
+        const nextTemp = Number((station.temperature + tempDelta).toFixed(1));
+        const nextWindSpeed = Math.max(2, Number((station.windSpeed + windSpeedDelta).toFixed(1)));
+        const nextWindDir = (station.windDirection + windDirDelta + 360) % 360;
+        const nextHumidity = Math.max(30, Math.min(100, station.humidity + humidityDelta));
+        const nextPressure = Math.round(station.pressure + pressureDelta);
+
+        return {
+          ...station,
+          temperature: nextTemp,
+          windSpeed: nextWindSpeed,
+          windDirection: nextWindDir,
+          humidity: nextHumidity,
+          pressure: nextPressure,
+          lastUpdated: new Date().toISOString(),
+        };
+      });
+      return { weatherStations: updated };
+    }),
+
+  // RSS Feed states
+  rssArticles: [],
+  rssLoading: false,
+  setRssArticles: (rssArticles) => set({ rssArticles }),
+  setRssLoading: (rssLoading) => set({ rssLoading }),
 
   // Selection Hover/Click Target
   selectedFeature: null,

@@ -142,30 +142,45 @@ const seedNews: DBOperationalNews[] = [
   }
 ];
 
+let seedingPromise: Promise<{
+  incidents: DBIncident[];
+  assets: DBCriticalAsset[];
+  news: DBOperationalNews[];
+}> | null = null;
+
 export async function seedTacticalDatabase(): Promise<{
   incidents: DBIncident[];
   assets: DBCriticalAsset[];
   news: DBOperationalNews[];
 }> {
-  // Check if databases are populated
-  const incidentCount = await db.incidents.count();
-  const assetCount = await db.criticalAssets.count();
-  const newsCount = await db.operationalNews.count();
-
-  if (incidentCount === 0) {
-    await db.incidents.bulkAdd(seedIncidents);
-  }
-  if (assetCount === 0) {
-    await db.criticalAssets.bulkAdd(seedAssets);
-  }
-  if (newsCount === 0) {
-    await db.operationalNews.bulkAdd(seedNews);
+  if (seedingPromise) {
+    return seedingPromise;
   }
 
-  // Retrieve full datasets from IndexedDB
-  const incidents = await db.incidents.toArray();
-  const assets = await db.criticalAssets.toArray();
-  const news = await db.operationalNews.toArray();
+  seedingPromise = (async () => {
+    // Check if databases are populated
+    const incidentCount = await db.incidents.count();
+    const assetCount = await db.criticalAssets.count();
+    const newsCount = await db.operationalNews.count();
 
-  return { incidents, assets, news };
+    // Use bulkPut instead of bulkAdd to be absolutely safe against constraint errors
+    if (incidentCount === 0) {
+      await db.incidents.bulkPut(seedIncidents);
+    }
+    if (assetCount === 0) {
+      await db.criticalAssets.bulkPut(seedAssets);
+    }
+    if (newsCount === 0) {
+      await db.operationalNews.bulkPut(seedNews);
+    }
+
+    // Retrieve full datasets from IndexedDB
+    const incidents = await db.incidents.toArray();
+    const assets = await db.criticalAssets.toArray();
+    const news = await db.operationalNews.toArray();
+
+    return { incidents, assets, news };
+  })();
+
+  return seedingPromise;
 }

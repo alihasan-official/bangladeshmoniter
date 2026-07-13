@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useState } from 'react';
 import DeckGL from '@deck.gl/react';
 import { ScatterplotLayer, LineLayer } from '@deck.gl/layers';
 import { Map } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
-import useStore from '../../store/useStore';
+import useStore, { WeatherStation } from '../../store/useStore';
 import { DBCriticalAsset } from '../../services/db';
 import { HighPerformanceClusterer } from '../../utils/spatial';
 
@@ -22,9 +22,24 @@ export default function MapCanvas() {
     layersVisibility,
     incidents,
     criticalAssets,
+    weatherStations,
     selectedFeature,
     setSelectedFeature,
   } = useStore();
+
+  // Pulse animation state for meteorology radar / rain rings
+  const [pulsePhase, setPulsePhase] = useState(0);
+
+  // Animation ticks for beautiful wind indicators and radar scans on the map
+  useEffect(() => {
+    let animationId: number;
+    const animate = () => {
+      setPulsePhase((prev) => (prev + 0.05) % (Math.PI * 2));
+      animationId = requestAnimationFrame(animate);
+    };
+    animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, []);
 
   // Create high-performance Supercluster instance
   const clusterer = useMemo(() => new HighPerformanceClusterer(), []);
@@ -93,6 +108,28 @@ export default function MapCanvas() {
     ];
   }, []);
 
+  // Compute Animated Wind Vectors for weather stations
+  const windVectorsData = useMemo(() => {
+    return weatherStations.map((station) => {
+      // Wind speed determines length of vector
+      const len = 0.08 + (station.windSpeed / 100) * 0.25;
+      // direction in degrees (0 = North, 90 = East, 180 = South, 270 = West)
+      const rad = (station.windDirection * Math.PI) / 180;
+      // Calculate target longitude/latitude offset based on wind angle
+      const toLng = station.lng + Math.sin(rad) * len;
+      const toLat = station.lat + Math.cos(rad) * len;
+
+      return {
+        id: `wind-${station.id}`,
+        name: `${station.name} Wind Vector`,
+        from: [station.lng, station.lat],
+        to: [toLng, toLat],
+        speed: station.windSpeed,
+        condition: station.condition,
+      };
+    });
+  }, [weatherStations]);
+
   // Construct Deck.gl Layers array
   const layers = useMemo(() => {
     const deckLayers = [];
@@ -123,6 +160,125 @@ export default function MapCanvas() {
           getSourcePosition: (d: any) => d.from,
           getTargetPosition: (d: any) => d.to,
           getColor: [220, 140, 30, 150],
+        })
+      );
+    }
+
+    // 2.5 Animated Weather Monitoring Layers (Dynamic Rings & Wind Vectors)
+    if (layersVisibility.weather) {
+      // Animated Wind Vectors Layer (Animated flowing vectors representing direction and intensity)
+      // Moving cycle shifts endpoints dynamically with the sine pulse
+      const phaseFactor = (Math.sin(pulsePhase) + 1) / 2; // 0 to 1
+
+      const animatedWindVectors = windVectorsData.map((vector) => {
+        const dLng = vector.to[0] - vector.from[0];
+        const dLat = vector.to[1] - vector.from[1];
+
+        // Animate flow direction
+        const currentTo = [
+          vector.from[0] + dLng * (0.4 + phaseFactor * 0.6),
+          vector.from[1] + dLat * (0.4 + phaseFactor * 0.6),
+        ];
+
+        return {
+          ...vector,
+          currentTo,
+        };
+      });
+
+      deckLayers.push(
+        new LineLayer({
+          id: 'weather-wind-layer',
+          data: animatedWindVectors,
+          pickable: false,
+          getWidth: (d: any) => Math.max(2, d.speed / 10),
+          getSourcePosition: (d: any) => d.from,
+          getTargetPosition: (d: any) => d.currentTo,
+          getColor: (d: any) => {
+            if (d.condition === 'cyclonic') return [255, 59, 48, 220]; // Danger Red
+            if (d.condition === 'stormy') return [245, 180, 0, 200]; // Stormy Orange-Yellow
+            if (d.condition === 'rainy') return [30, 144, 255, 180]; // Rain Blue
+            return [0, 208, 132, 160]; // Nominal Emerald Wind
+          },
+          updateTriggers: {
+            getTargetPosition: [pulsePhase],
+          },
+        })
+      );
+
+      // Pulse rings representing storm/rain warning radii at weather stations
+      const animatedWeatherRings = weatherStations.map((station) => {
+        // Base radius fluctuates using the sine wave phase
+        const pulseRatio = ((pulsePhase * 2) % 3) / 3; // Repeats 0 -> 1 nicely
+        const maxRadius = station.condition === 'cyclonic' ? 35000 : station.condition === 'stormy' ? 22000 : 12000;
+        const currentRadius = maxRadius * (0.3 + pulseRatio * 0.7);
+
+        return {
+          ...station,
+          currentRadius,
+          opacity: 1.0 - pulseRatio, // Fade out as it expands
+        };
+      });
+
+      // Scatterplot layer for weather stations (Solid cores with outer animated radar scanners)
+      deckLayers.push(
+        new ScatterplotLayer({
+          id: 'weather-radar-rings',
+          data: animatedWeatherRings,
+          pickable: false,
+          opacity: 0.45,
+          stroked: true,
+          filled: false,
+          radiusScale: 1,
+          lineWidthMinPixels: 1.5,
+          getPosition: (d: WeatherStation) => [d.lng, d.lat],
+          getRadius: (d: any) => d.currentRadius,
+          getLineColor: (d: any) => {
+            const opacityByte = Math.floor(d.opacity * 255);
+            if (d.condition === 'cyclonic') return [255, 59, 48, opacityByte];
+            if (d.condition === 'stormy') return [245, 180, 0, opacityByte];
+            if (d.condition === 'rainy') return [30, 144, 255, opacityByte];
+            return [0, 208, 132, opacityByte];
+          },
+          updateTriggers: {
+            getRadius: [pulsePhase],
+            getLineColor: [pulsePhase],
+          },
+        })
+      );
+
+      deckLayers.push(
+        new ScatterplotLayer({
+          id: 'weather-station-cores',
+          data: weatherStations,
+          pickable: true,
+          opacity: 0.9,
+          stroked: true,
+          filled: true,
+          radiusScale: 1,
+          radiusMinPixels: 7,
+          radiusMaxPixels: 15,
+          lineWidthMinPixels: 1.5,
+          getPosition: (d: WeatherStation) => [d.lng, d.lat],
+          getRadius: 1000,
+          getFillColor: (d: WeatherStation) => {
+            if (d.condition === 'cyclonic') return [255, 59, 48];
+            if (d.condition === 'stormy') return [245, 180, 0];
+            if (d.condition === 'rainy') return [30, 144, 255];
+            return [0, 208, 132];
+          },
+          getLineColor: (d: WeatherStation) => {
+            if (selectedFeature?.id === d.id) return [255, 255, 255];
+            return [15, 20, 25];
+          },
+          onClick: (info: any) => {
+            if (info.object) {
+              setSelectedFeature({ ...info.object, featureType: 'Weather' });
+            }
+          },
+          updateTriggers: {
+            getLineColor: [selectedFeature],
+          },
         })
       );
     }
@@ -232,6 +388,9 @@ export default function MapCanvas() {
     layersVisibility,
     visibleIncidentData,
     criticalAssets,
+    weatherStations,
+    windVectorsData,
+    pulsePhase,
     selectedFeature,
     setSelectedFeature,
     waterwayLinesData,

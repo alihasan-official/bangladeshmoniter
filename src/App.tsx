@@ -3,6 +3,7 @@ import MapCanvas from './components/map/MapCanvas';
 import useStore from './store/useStore';
 import { seedTacticalDatabase } from './services/dataSeeder';
 import { exportToGeoJSON, exportToCSV, exportToMarkdown } from './utils/export';
+import { aggregateBangladeshNews } from './services/rssAggregator';
 import {
   ShieldAlert,
   Compass,
@@ -23,6 +24,11 @@ import {
   Play,
   Pause,
   FastForward,
+  CloudSun,
+  Thermometer,
+  Wind,
+  Droplets,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function App() {
@@ -35,6 +41,12 @@ export default function App() {
     setIncidents,
     setCriticalAssets,
     setNews,
+    weatherStations,
+    updateWeatherStations,
+    rssArticles,
+    rssLoading,
+    setRssArticles,
+    setRssLoading,
     selectedFeature,
     setSelectedFeature,
     timelineTime,
@@ -54,7 +66,7 @@ export default function App() {
   } = useStore();
 
   const [isCommandSheetOpen, setIsCommandSheetOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'incidents' | 'assets'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'incidents' | 'assets' | 'weather' | 'rss'>('all');
   const [isByokOpen, setIsByokOpen] = useState(false);
   const [localKey, setLocalKey] = useState('');
   const [localProvider, setLocalProvider] = useState<'openai' | 'groq' | 'openrouter'>('groq');
@@ -78,6 +90,25 @@ export default function App() {
     loadData();
   }, [setIncidents, setCriticalAssets, setNews]);
 
+  // 1.5 Load Live RSS Feed News and trigger live updates
+  const loadRssNews = async () => {
+    setRssLoading(true);
+    try {
+      const articles = await aggregateBangladeshNews();
+      setRssArticles(articles);
+    } catch (e) {
+      console.error('Error fetching live RSS feed:', e);
+    } finally {
+      setRssLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRssNews();
+    const interval = setInterval(loadRssNews, 180000); // refresh RSS feeds every 3 mins
+    return () => clearInterval(interval);
+  }, []);
+
   // 2. Continuous time ticking in Dhaka Standard Time (GMT+6)
   useEffect(() => {
     const tick = () => {
@@ -92,13 +123,16 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // 3. Simulated Playback Loop for Tactical Timeline Scrubbing
+  // 3. Simulated Playback Loop for Tactical Timeline Scrubbing & Weather Drift
   useEffect(() => {
     let intervalId: any = null;
     if (timelineIsPlaying) {
       intervalId = setInterval(() => {
         // Step time forward by 10 seconds multiplied by play speed
         setTimelineTime(timelineTime + 10000 * timelineSpeed);
+
+        // Periodically fluctuate weather sensor grids alongside the playback scrubbing
+        updateWeatherStations();
 
         // Fluctuate risk scores slightly dynamically to trigger recalculations
         const delta = (Math.random() - 0.5) * 3;
@@ -119,7 +153,7 @@ export default function App() {
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [timelineIsPlaying, timelineTime, timelineSpeed, setTimelineTime, riskAnalysis, setRiskAnalysis]);
+  }, [timelineIsPlaying, timelineTime, timelineSpeed, setTimelineTime, riskAnalysis, setRiskAnalysis, updateWeatherStations]);
 
   // 4. Client-side AI / Offline NLP analyst engine
   const runOfflineNlpAnalyst = (feature: any) => {
@@ -143,6 +177,9 @@ Tracked gateway node ${name} (${cat}) reports state: [${feature.status.toUpperCa
         nlpOutput = `CRITICAL NODE NOMINAL COMPLIANCE:
 Strategic node ${name} (${cat}) is operating at 100% capacity parameters (${feature.capacityValue || 'N/A'}). Physical security layers report nominal subcontinental border integration.`;
       }
+    } else if (feature.featureType === 'Weather') {
+      nlpOutput = `TACTICAL METEOROLOGY BRIEF — SENSOR PORTAL [${name.toUpperCase()}]:
+Ambient temp registered at ${feature.temperature}°C, humidity ${feature.humidity}%, with winds vectoring at ${feature.windSpeed} km/h toward ${feature.windDirection} degrees. Condition designated as [${feature.condition.toUpperCase()}]. Cyclone surge and transboundary runoffs remain monitored. No major anomalies reported on current sensor slice.`;
     } else {
       nlpOutput = `TACTICAL INTEL LOG: Unified feature coordinates verified within Bangladesh Monitor v2.0 South Asian bounding limits. Nominal state check complete.`;
     }
@@ -175,7 +212,7 @@ TARGET EVENT PARAMETERS:
 - Category: ${feature.category || 'N/A'}
 - Identifier/Name: ${feature.name || feature.title || 'N/A'}
 - Position: Lat ${feature.lat}, Lng ${feature.lng}
-- Status/Severity: ${feature.status || feature.severity || 'N/A'}
+- Status/Severity: ${feature.status || feature.severity || feature.condition || 'N/A'}
 - Description: ${feature.description || 'N/A'}
 
 Provide an elite strategic summary and tactical impact report. Keep it concise, professional, and action-oriented. Limit response to 120 words.`;
@@ -250,6 +287,19 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
     (asset) =>
       asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       asset.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredWeather = weatherStations.filter(
+    (station) =>
+      station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      station.condition.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredRss = rssArticles.filter(
+    (art) =>
+      art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      art.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      art.source.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const saveByokCredentials = () => {
@@ -427,6 +477,21 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
                 <span>Waterways flow</span>
                 <span className={`w-1.5 h-1.5 rounded-full ${layersVisibility.waterways ? 'bg-cyan-400' : 'bg-slate-700'}`}></span>
               </button>
+
+              <button
+                onClick={() => toggleLayer('weather')}
+                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center col-span-2 ${
+                  layersVisibility.weather
+                    ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/40 font-bold'
+                    : 'bg-[#0d0e12] text-slate-500 border-[#1a1d24]'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <CloudSun className="w-3.5 h-3.5" />
+                  <span>Meteorology Sensors</span>
+                </span>
+                <span className={`w-1.5 h-1.5 rounded-full ${layersVisibility.weather ? 'bg-indigo-400' : 'bg-slate-700'}`}></span>
+              </button>
             </div>
           </div>
 
@@ -443,14 +508,14 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-1 text-[10px] font-bold text-center">
+            <div className="grid grid-cols-5 gap-0.5 text-[8.5px] font-bold text-center">
               <button
                 onClick={() => setActiveTab('all')}
                 className={`py-1 rounded border transition ${
                   activeTab === 'all' ? 'bg-[#006a4e] text-white border-[#006a4e]' : 'bg-[#0d0e12] text-slate-400 border-[#1a1d24]'
                 }`}
               >
-                ALL EVENTS
+                ALL
               </button>
               <button
                 onClick={() => setActiveTab('incidents')}
@@ -458,7 +523,7 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
                   activeTab === 'incidents' ? 'bg-brand-crimson/20 text-brand-crimson border-brand-crimson/40' : 'bg-[#0d0e12] text-slate-400 border-[#1a1d24]'
                 }`}
               >
-                INCIDENTS
+                OSINT
               </button>
               <button
                 onClick={() => setActiveTab('assets')}
@@ -467,6 +532,22 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
                 }`}
               >
                 ASSETS
+              </button>
+              <button
+                onClick={() => setActiveTab('weather')}
+                className={`py-1 rounded border transition ${
+                  activeTab === 'weather' ? 'bg-indigo-400/20 text-indigo-400 border-indigo-400/40' : 'bg-[#0d0e12] text-slate-400 border-[#1a1d24]'
+                }`}
+              >
+                METEO
+              </button>
+              <button
+                onClick={() => setActiveTab('rss')}
+                className={`py-1 rounded border transition ${
+                  activeTab === 'rss' ? 'bg-emerald-400/20 text-emerald-400 border-emerald-400/40 font-bold' : 'bg-[#0d0e12] text-slate-400 border-[#1a1d24]'
+                }`}
+              >
+                LIVE RSS
               </button>
             </div>
           </div>
@@ -538,6 +619,83 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
                   </span>
                 </div>
               ))}
+
+            {(activeTab === 'all' || activeTab === 'weather') &&
+              filteredWeather.map((station) => (
+                <div
+                  key={station.id}
+                  onClick={() => setSelectedFeature({ ...station, featureType: 'Weather' })}
+                  className={`p-2.5 hover:bg-[#1a1d24]/80 cursor-pointer transition flex items-center justify-between ${
+                    selectedFeature?.id === station.id ? 'bg-[#1a1d24] border-l-2 border-indigo-400' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <CloudSun className="w-3.5 h-3.5 text-indigo-400 shrink-0 animate-pulse" />
+                    <div className="truncate">
+                      <div className="font-bold text-slate-200 truncate">{station.name}</div>
+                      <div className="text-[10px] text-slate-500 truncate flex gap-2">
+                        <span>{station.temperature}°C</span>
+                        <span>•</span>
+                        <span>{station.windSpeed} km/h {station.windDirection}°</span>
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                      station.condition === 'cyclonic'
+                        ? 'bg-red-500/10 text-[#ff3b30] border border-red-500/30'
+                        : station.condition === 'stormy'
+                        ? 'bg-yellow-500/10 text-amber-500 border border-yellow-500/30'
+                        : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'
+                    }`}
+                  >
+                    {station.condition}
+                  </span>
+                </div>
+              ))}
+
+            {(activeTab === 'all' || activeTab === 'rss') && (
+              rssLoading ? (
+                <div className="p-4 flex flex-col items-center justify-center gap-2 text-slate-500">
+                  <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
+                  <span>Loading live breaking portals...</span>
+                </div>
+              ) : filteredRss.length === 0 ? (
+                <div className="p-4 text-center text-slate-500">No RSS entries found.</div>
+              ) : (
+                filteredRss.map((art, idx) => (
+                  <div
+                    key={`rss-${idx}`}
+                    onClick={() => setSelectedFeature({ ...art, featureType: 'RSSArticle' })}
+                    className={`p-2.5 hover:bg-[#1a1d24]/80 cursor-pointer transition flex items-start gap-2.5 ${
+                      selectedFeature?.link === art.link ? 'bg-[#1a1d24] border-l-2 border-emerald-400' : ''
+                    }`}
+                  >
+                    {art.thumbnail ? (
+                      <img
+                        src={art.thumbnail}
+                        alt="News thumbnail"
+                        className="w-12 h-12 object-cover rounded border border-[#1a1d24] shrink-0 mt-0.5"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <Newspaper className="w-8 h-8 text-slate-500 shrink-0 mt-1" />
+                    )}
+                    <div className="overflow-hidden flex-1">
+                      <div className="font-bold text-slate-200 text-[11px] leading-tight line-clamp-2 hover:text-[#00d084] transition">
+                        {art.title}
+                      </div>
+                      <div className="text-[9px] text-slate-500 mt-1 flex justify-between">
+                        <span className="text-[#00d084] font-bold uppercase">{art.source}</span>
+                        <span>{new Date(art.pubDate).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )
+            )}
           </div>
 
           {/* Export Subsystem commands bar */}
@@ -740,6 +898,50 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
                 </>
               )}
 
+              {selectedFeature.featureType === 'Weather' && (
+                <>
+                  <div className="flex justify-between">
+                    <span>STATION NAME:</span>
+                    <span className="text-slate-200 font-bold">{selectedFeature.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>TEMPERATURE:</span>
+                    <span className="text-slate-200 font-bold flex items-center gap-1">
+                      <Thermometer className="w-3.5 h-3.5 text-red-400" />
+                      {selectedFeature.temperature}°C
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>WIND FLOW:</span>
+                    <span className="text-slate-200 flex items-center gap-1 font-bold">
+                      <Wind className="w-3.5 h-3.5 text-cyan-400" />
+                      {selectedFeature.windSpeed} km/h @ {selectedFeature.windDirection}°
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>RELATIVE HUMIDITY:</span>
+                    <span className="text-slate-200 flex items-center gap-1">
+                      <Droplets className="w-3.5 h-3.5 text-indigo-400" />
+                      {selectedFeature.humidity}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>AIR PRESSURE:</span>
+                    <span className="text-slate-200">{selectedFeature.pressure} hPa</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>CURRENT CONDITION:</span>
+                    <span className={`font-bold uppercase ${selectedFeature.condition === 'cyclonic' ? 'text-red-500 animate-ping' : selectedFeature.condition === 'stormy' ? 'text-amber-500' : 'text-indigo-400'}`}>
+                      {selectedFeature.condition}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-[#1a1d24] pt-2 text-[10px]">
+                    <span>LAST UPDATE:</span>
+                    <span className="text-slate-500">{new Date(selectedFeature.lastUpdated).toLocaleTimeString()}</span>
+                  </div>
+                </>
+              )}
+
               {selectedFeature.featureType === 'News' && (
                 <>
                   <div className="flex justify-between">
@@ -761,6 +963,46 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
                     <div className="text-slate-200 mt-1 leading-relaxed text-[11px] font-bold">
                       {selectedFeature.title}
                     </div>
+                  </div>
+                </>
+              )}
+
+              {selectedFeature.featureType === 'RSSArticle' && (
+                <>
+                  {selectedFeature.thumbnail && (
+                    <img
+                      src={selectedFeature.thumbnail}
+                      alt="Article graphic"
+                      className="w-full h-36 object-cover rounded border border-[#1a1d24] mb-2"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <div className="flex justify-between">
+                    <span>OUTLET PORTAL:</span>
+                    <span className="text-emerald-400 font-bold uppercase">{selectedFeature.source}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>PUBLISHED TIME:</span>
+                    <span className="text-slate-300">{new Date(selectedFeature.pubDate).toLocaleString()}</span>
+                  </div>
+                  <div className="border-t border-[#1a1d24] pt-2">
+                    <span className="text-slate-400 font-bold leading-snug text-[11px] block mb-1">
+                      {selectedFeature.title}
+                    </span>
+                    <div className="text-slate-300 text-[10.5px] leading-relaxed font-sans mb-3">
+                      {selectedFeature.description}
+                    </div>
+                    <a
+                      href={selectedFeature.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-1.5 px-3 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold transition flex items-center justify-center gap-1.5 hover:bg-emerald-500 hover:text-white"
+                    >
+                      <span>READ ORIGINAL COVERAGE</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
                   </div>
                 </>
               )}
