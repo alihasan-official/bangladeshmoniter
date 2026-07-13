@@ -68,7 +68,8 @@ export default function App() {
   } = useStore();
 
   const [isCommandSheetOpen, setIsCommandSheetOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'incidents' | 'assets' | 'weather' | 'rss'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'incidents' | 'assets' | 'weather' | 'rss' | 'intel'>('all');
+  const { selectedNewsTopic, setSelectedNewsTopic } = useStore();
   const [isByokOpen, setIsByokOpen] = useState(false);
   const [localKey, setLocalKey] = useState('');
   const [localProvider, setLocalProvider] = useState<'openai' | 'groq' | 'openrouter'>('groq');
@@ -384,8 +385,8 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
       {/* Left-Hand Collapsible Command Drawer */}
       <aside
-        className={`absolute top-16 left-4 z-10 w-[90%] sm:w-[23rem] max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl transition-all duration-300 flex flex-col ${
-          isCommandSheetOpen ? 'translate-x-0' : '-translate-x-[110%] sm:-translate-x-[25rem]'
+        className={`absolute top-16 left-4 z-10 w-[90%] sm:w-[24rem] max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl transition-all duration-300 flex flex-col ${
+          isCommandSheetOpen ? 'translate-x-0' : '-translate-x-[110%] sm:-translate-x-[26rem]'
         }`}
       >
         <div className="glass-panel w-full flex flex-col rounded-lg overflow-hidden border border-brand-border">
@@ -542,9 +543,10 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
               />
             </div>
 
-            <div className="grid grid-cols-5 gap-0.5 text-[8.5px] font-bold text-center">
+            <div className="grid grid-cols-6 gap-0.5 text-[8px] sm:text-[8.5px] font-bold text-center">
               <button
                 onClick={() => setActiveTab('all')}
+                aria-label="Show all records"
                 className={`py-1 rounded border transition ${
                   activeTab === 'all' ? 'bg-[#006a4e] text-white border-[#006a4e]' : 'bg-[#0d0e12] text-slate-400 border-[#1a1d24]'
                 }`}
@@ -553,6 +555,7 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
               </button>
               <button
                 onClick={() => setActiveTab('incidents')}
+                aria-label="Show OSINT incidents"
                 className={`py-1 rounded border transition ${
                   activeTab === 'incidents' ? 'bg-brand-crimson/20 text-brand-crimson border-brand-crimson/40' : 'bg-[#0d0e12] text-slate-400 border-[#1a1d24]'
                 }`}
@@ -561,6 +564,7 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
               </button>
               <button
                 onClick={() => setActiveTab('assets')}
+                aria-label="Show critical assets"
                 className={`py-1 rounded border transition ${
                   activeTab === 'assets' ? 'bg-blue-400/20 text-blue-400 border-blue-400/40' : 'bg-[#0d0e12] text-slate-400 border-[#1a1d24]'
                 }`}
@@ -569,6 +573,7 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
               </button>
               <button
                 onClick={() => setActiveTab('weather')}
+                aria-label="Show meteorology and weather sensors"
                 className={`py-1 rounded border transition ${
                   activeTab === 'weather' ? 'bg-indigo-400/20 text-indigo-400 border-indigo-400/40' : 'bg-[#0d0e12] text-slate-400 border-[#1a1d24]'
                 }`}
@@ -577,17 +582,27 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
               </button>
               <button
                 onClick={() => setActiveTab('rss')}
+                aria-label="Show live RSS news feeds"
                 className={`py-1 rounded border transition ${
                   activeTab === 'rss' ? 'bg-emerald-400/20 text-emerald-400 border-emerald-400/40 font-bold' : 'bg-[#0d0e12] text-slate-400 border-[#1a1d24]'
                 }`}
               >
-                LIVE RSS
+                RSS
+              </button>
+              <button
+                onClick={() => setActiveTab('intel')}
+                aria-label="Show worldmonitor news intelligence"
+                className={`py-1 rounded border transition ${
+                  activeTab === 'intel' ? 'bg-amber-500/25 text-amber-400 border-amber-500/40 font-bold animate-pulse' : 'bg-[#0d0e12] text-slate-400 border-[#1a1d24]'
+                }`}
+              >
+                INTEL
               </button>
             </div>
           </div>
 
           {/* Scrolling List Panel */}
-          <div className="flex-1 overflow-y-auto max-h-56 bg-[#12141a]/60 font-mono text-xs divide-y divide-[#1a1d24]">
+          <div className="flex-1 overflow-y-auto max-h-[20rem] bg-[#12141a]/60 font-mono text-xs divide-y divide-[#1a1d24]">
             {(activeTab === 'all' || activeTab === 'incidents') &&
               filteredIncidents.map((inc) => (
                 <div
@@ -729,6 +744,124 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
                   </div>
                 ))
               )
+            )}
+
+            {/* Active WorldMonitor-Style News Intelligence Category Dashboard */}
+            {activeTab === 'intel' && (
+              <div className="p-3 space-y-4 bg-[#0d0e12]/90">
+                {/* Meta Header */}
+                <div className="p-2 bg-[#12141a] rounded border border-[#1a1d24] text-[10px] space-y-1">
+                  <div className="flex justify-between text-slate-400 font-bold">
+                    <span>NEWS INTELLIGENCE MONITOR:</span>
+                    <span className="text-emerald-400 animate-pulse">AUTO-REFRESH</span>
+                  </div>
+                  <div className="text-slate-500">
+                    Real-time national news monitoring with curated topics in 100+ languages parsed & translated instantly. Updates every 15 minutes.
+                  </div>
+                </div>
+
+                {/* News Intelligence curation categories with 14-day Media Tone & Volume Trend */}
+                <div className="space-y-3">
+                  {[
+                    {
+                      topic: 'Conflicts',
+                      desc: 'Border skirmishes, active patrols, military maneuvers',
+                      tone: 'Negative (-1.8)',
+                      volume: '1,420 Articles',
+                      trend: [20, 25, 35, 42, 38, 45, 55, 60, 50, 48, 52, 65, 70, 78],
+                      color: 'bg-red-500',
+                      indicatorColor: 'text-[#ff3b30]',
+                    },
+                    {
+                      topic: 'Cybersecurity',
+                      desc: 'Transboundary node breaches, database delays',
+                      tone: 'Mixed (-0.4)',
+                      volume: '840 Articles',
+                      trend: [10, 12, 11, 15, 18, 14, 20, 22, 19, 25, 30, 28, 35, 42],
+                      color: 'bg-indigo-500',
+                      indicatorColor: 'text-indigo-400',
+                    },
+                    {
+                      topic: 'Geopolitics',
+                      desc: 'International maritime borders & treaty agreements',
+                      tone: 'Positive (+0.8)',
+                      volume: '1,960 Articles',
+                      trend: [50, 48, 45, 52, 58, 62, 60, 65, 70, 72, 75, 80, 85, 90],
+                      color: 'bg-emerald-500',
+                      indicatorColor: 'text-[#006a4e]',
+                    },
+                    {
+                      topic: 'Hydrology',
+                      desc: 'Embankment spillovers, flood discharge indices',
+                      tone: 'Negative (-2.4)',
+                      volume: '2,810 Articles',
+                      trend: [30, 35, 45, 55, 60, 68, 75, 80, 88, 92, 95, 100, 105, 112],
+                      color: 'bg-blue-500',
+                      indicatorColor: 'text-blue-400',
+                    },
+                    {
+                      topic: 'Logistics',
+                      desc: 'Customs bottlenecks, transboundary dry cargo transit',
+                      tone: 'Stable (0.0)',
+                      volume: '950 Articles',
+                      trend: [15, 18, 16, 20, 22, 19, 21, 24, 22, 25, 27, 26, 28, 30],
+                      color: 'bg-amber-500',
+                      indicatorColor: 'text-amber-500',
+                    },
+                    {
+                      topic: 'Maritime Monitor',
+                      desc: 'Exclusive Economic Zone transponder activity',
+                      tone: 'Positive (+1.2)',
+                      volume: '1,150 Articles',
+                      trend: [25, 28, 30, 29, 35, 38, 42, 40, 44, 48, 50, 52, 55, 58],
+                      color: 'bg-cyan-500',
+                      indicatorColor: 'text-cyan-400',
+                    }
+                  ].map((topicObj) => (
+                    <div
+                      key={topicObj.topic}
+                      onClick={() => setSelectedNewsTopic(topicObj.topic)}
+                      className={`p-2.5 rounded border cursor-pointer transition ${
+                        selectedNewsTopic === topicObj.topic
+                          ? 'bg-[#1a1d24] border-amber-500/80 shadow-lg'
+                          : 'bg-[#12141a]/90 border-[#1a1d24] hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className={`font-bold text-xs ${topicObj.indicatorColor}`}>
+                          {topicObj.topic}
+                        </span>
+                        <span className="text-[10px] text-slate-500">{topicObj.volume}</span>
+                      </div>
+                      <div className="text-[9.5px] text-slate-400 leading-tight mb-2">
+                        {topicObj.desc}
+                      </div>
+
+                      {/* 14-day Media Tone & Volume Trend Sparkline bar */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[8px] text-slate-500 font-mono">
+                          <span>14-DAY TONE: {topicObj.tone}</span>
+                          <span>MEDIA TREND</span>
+                        </div>
+                        <div className="flex items-end gap-0.5 h-6 bg-[#0d0e12] p-1 rounded border border-[#1a1d24]">
+                          {topicObj.trend.map((val, i) => {
+                            const maxVal = Math.max(...topicObj.trend);
+                            const percent = maxVal > 0 ? (val / maxVal) * 100 : 0;
+                            return (
+                              <div
+                                key={i}
+                                className={`flex-1 ${topicObj.color} rounded-t-sm transition-all duration-300`}
+                                style={{ height: `${percent}%` }}
+                                title={`Day ${i + 1}: ${val}`}
+                              ></div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 

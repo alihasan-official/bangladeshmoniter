@@ -87,6 +87,10 @@ interface MonitorState {
   setRssArticles: (articles: RSSArticle[]) => void;
   setRssLoading: (loading: boolean) => void;
 
+  // Selected News Topic for the News Intelligence view
+  selectedNewsTopic: string | null;
+  setSelectedNewsTopic: (topic: string | null) => void;
+
   // Selection
   selectedFeature: any | null;
   setSelectedFeature: (feature: any | null) => void;
@@ -285,6 +289,10 @@ export const useStore = create<MonitorState>((set) => ({
   rssLoading: false,
   setRssArticles: (rssArticles) => set({ rssArticles }),
   setRssLoading: (rssLoading) => set({ rssLoading }),
+
+  // News Intelligence topic selection
+  selectedNewsTopic: null,
+  setSelectedNewsTopic: (selectedNewsTopic) => set({ selectedNewsTopic }),
 
   // Selection Hover/Click Target
   selectedFeature: null,
