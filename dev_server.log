@@ -9,3 +9,8 @@
   ➜  Network: http://192.168.0.2:3000/
 8:07:41 PM [vite] hmr update /src/App.tsx, /src/index.css
 8:07:41 PM [vite] hmr update /src/App.tsx, /src/index.css
+8:30:28 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/map/MapCanvas.tsx
+8:32:07 PM [vite] hmr update /src/App.tsx, /src/index.css
+8:33:21 PM [vite] hmr update /src/components/map/MapCanvas.tsx, /src/index.css
+8:34:04 PM [vite] hmr update /src/App.tsx, /src/index.css
+8:34:20 PM [vite] hmr update /src/App.tsx, /src/index.css

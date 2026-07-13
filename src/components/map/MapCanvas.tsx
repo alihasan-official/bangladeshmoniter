@@ -23,6 +23,7 @@ export default function MapCanvas() {
     incidents,
     criticalAssets,
     weatherStations,
+    rssArticles,
     selectedFeature,
     setSelectedFeature,
   } = useStore();
@@ -283,6 +284,42 @@ export default function MapCanvas() {
       );
     }
 
+    // 2.75 RSS Feeds Layer (Pinpoint geocoded live news articles)
+    if (layersVisibility.rssFeeds && rssArticles.length > 0) {
+      deckLayers.push(
+        new ScatterplotLayer({
+          id: 'rss-feeds-layer',
+          data: rssArticles,
+          pickable: true,
+          opacity: 0.9,
+          stroked: true,
+          filled: true,
+          radiusScale: 1,
+          radiusMinPixels: 6,
+          radiusMaxPixels: 15,
+          lineWidthMinPixels: 1.5,
+          getPosition: (d: any) => [d.lng, d.lat],
+          getRadius: 1000,
+          getFillColor: (d: any) => {
+            if (d.translated) return [245, 180, 0]; // Translated Bangla is Amber
+            return [0, 208, 132]; // Standard English RSS is Emerald Green
+          },
+          getLineColor: (d: any) => {
+            if (selectedFeature?.link === d.link) return [255, 255, 255];
+            return [15, 20, 25];
+          },
+          onClick: (info: any) => {
+            if (info.object) {
+              setSelectedFeature({ ...info.object, featureType: 'RSSArticle' });
+            }
+          },
+          updateTriggers: {
+            getLineColor: [selectedFeature],
+          },
+        })
+      );
+    }
+
     // 3. Critical Assets layer
     if (layersVisibility.criticalAssets) {
       deckLayers.push(
@@ -389,6 +426,7 @@ export default function MapCanvas() {
     visibleIncidentData,
     criticalAssets,
     weatherStations,
+    rssArticles,
     windVectorsData,
     pulsePhase,
     selectedFeature,

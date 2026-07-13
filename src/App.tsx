@@ -480,17 +480,32 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
               <button
                 onClick={() => toggleLayer('weather')}
-                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center col-span-2 ${
+                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center ${
                   layersVisibility.weather
                     ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/40 font-bold'
                     : 'bg-[#0d0e12] text-slate-500 border-[#1a1d24]'
                 }`}
               >
                 <span className="flex items-center gap-1.5">
-                  <CloudSun className="w-3.5 h-3.5" />
-                  <span>Meteorology Sensors</span>
+                  <CloudSun className="w-3.5 h-3.5 animate-pulse" />
+                  <span>Meteo Sensors</span>
                 </span>
                 <span className={`w-1.5 h-1.5 rounded-full ${layersVisibility.weather ? 'bg-indigo-400' : 'bg-slate-700'}`}></span>
+              </button>
+
+              <button
+                onClick={() => toggleLayer('rssFeeds')}
+                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center ${
+                  layersVisibility.rssFeeds
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40 font-bold'
+                    : 'bg-[#0d0e12] text-slate-500 border-[#1a1d24]'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Newspaper className="w-3.5 h-3.5 animate-pulse" />
+                  <span>Live RSS Pins</span>
+                </span>
+                <span className={`w-1.5 h-1.5 rounded-full ${layersVisibility.rssFeeds ? 'bg-emerald-400' : 'bg-slate-700'}`}></span>
               </button>
             </div>
           </div>
@@ -987,6 +1002,12 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
                     <span>PUBLISHED TIME:</span>
                     <span className="text-slate-300">{new Date(selectedFeature.pubDate).toLocaleString()}</span>
                   </div>
+                  {selectedFeature.translated && (
+                    <div className="flex justify-between text-amber-400">
+                      <span>TRANSLATION:</span>
+                      <span className="font-bold">BANGLA TO ENGLISH (HEURISTIC)</span>
+                    </div>
+                  )}
                   <div className="border-t border-[#1a1d24] pt-2">
                     <span className="text-slate-400 font-bold leading-snug text-[11px] block mb-1">
                       {selectedFeature.title}

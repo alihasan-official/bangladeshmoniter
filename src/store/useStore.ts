@@ -46,6 +46,10 @@ export interface RSSArticle {
   description: string;
   thumbnail: string;
   source: string;
+  lat?: number;
+  lng?: number;
+  translated?: boolean;
+  originalLanguage?: string;
 }
 
 interface MonitorState {
@@ -60,8 +64,9 @@ interface MonitorState {
     shippingCorridors: boolean;
     waterways: boolean;
     weather: boolean; // added weather layer
+    rssFeeds: boolean; // added rss feeds layer
   };
-  toggleLayer: (layerKey: 'incidents' | 'criticalAssets' | 'shippingCorridors' | 'waterways' | 'weather') => void;
+  toggleLayer: (layerKey: 'incidents' | 'criticalAssets' | 'shippingCorridors' | 'waterways' | 'weather' | 'rssFeeds') => void;
 
   // Active Telemetry/Operational Data
   incidents: DBIncident[];
@@ -221,6 +226,7 @@ export const useStore = create<MonitorState>((set) => ({
     shippingCorridors: true,
     waterways: true,
     weather: true, // weather layer visible by default
+    rssFeeds: true, // rss feeds layer visible by default
   },
   toggleLayer: (layerKey) =>
     set((state) => ({
