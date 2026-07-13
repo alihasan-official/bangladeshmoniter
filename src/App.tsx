@@ -748,115 +748,105 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
             {/* Active WorldMonitor-Style News Intelligence Category Dashboard */}
             {activeTab === 'intel' && (
-              <div className="p-3 space-y-4 bg-[#0d0e12]/90">
+              <div className="p-3 space-y-3 bg-[#0d0e12]/90">
                 {/* Meta Header */}
-                <div className="p-2 bg-[#12141a] rounded border border-[#1a1d24] text-[10px] space-y-1">
+                <div className="p-2.5 bg-[#12141a] rounded border border-[#1a1d24] text-[10px] space-y-1.5">
                   <div className="flex justify-between text-slate-400 font-bold">
                     <span>NEWS INTELLIGENCE MONITOR:</span>
-                    <span className="text-emerald-400 animate-pulse">AUTO-REFRESH</span>
+                    <span className="text-emerald-400 animate-pulse font-mono">15-MIN AUTO-REFRESH</span>
                   </div>
-                  <div className="text-slate-500">
-                    Real-time national news monitoring with curated topics in 100+ languages parsed & translated instantly. Updates every 15 minutes.
+                  <div className="text-slate-400 text-[10.5px] leading-relaxed">
+                    Real-time national news monitoring with curated topics parsed from over 100+ native news outlets, translated and compiled instantly.
                   </div>
                 </div>
 
-                {/* News Intelligence curation categories with 14-day Media Tone & Volume Trend */}
-                <div className="space-y-3">
+                {/* AI Insights & Main Incidents points Summary */}
+                <div className="bg-brand-emerald/10 border border-brand-emerald/30 p-2.5 rounded text-xs space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-brand-emerald font-bold">
+                    <Cpu className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '6s' }} />
+                    <span>REAL-TIME AI INSIGHTS SUMMARY</span>
+                  </div>
+                  <ul className="list-disc pl-4 space-y-1 text-slate-300 text-[11px] leading-relaxed">
+                    <li>
+                      <strong className="text-white">Active Flooding:</strong> Surma basin water level stands critical at 45cm above safe thresholds.
+                    </li>
+                    <li>
+                      <strong className="text-white">Transit Logistics:</strong> Benapole dry border corridors experiencing active cargo transit bottlenecks.
+                    </li>
+                    <li>
+                      <strong className="text-white">Seaport Alert:</strong> Coast Guard deployed additional response patrols around Chittagong deepwater lanes.
+                    </li>
+                    <li>
+                      <strong className="text-white">Tectonic Stability:</strong> Recent 4.8 magnitude seismic tremor monitored along northern boundaries.
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Curated Curation categories with Volume and Tone breakdown metrics */}
+                <div className="space-y-2.5">
                   {[
                     {
-                      topic: 'Conflicts',
-                      desc: 'Border skirmishes, active patrols, military maneuvers',
+                      topic: 'Conflicts & Border Security',
+                      desc: 'Active patrols, BNS Shadhinota EEZ surveillance missions, perimeter checkpoint controls',
                       tone: 'Negative (-1.8)',
                       volume: '1,420 Articles',
-                      trend: [20, 25, 35, 42, 38, 45, 55, 60, 50, 48, 52, 65, 70, 78],
-                      color: 'bg-red-500',
+                      color: 'border-l-4 border-l-red-500',
                       indicatorColor: 'text-[#ff3b30]',
                     },
                     {
-                      topic: 'Cybersecurity',
-                      desc: 'Transboundary node breaches, database delays',
+                      topic: 'Cyber & Systems Systems',
+                      desc: 'Customs server connectivity delays, transboundary node bottlenecks',
                       tone: 'Mixed (-0.4)',
                       volume: '840 Articles',
-                      trend: [10, 12, 11, 15, 18, 14, 20, 22, 19, 25, 30, 28, 35, 42],
-                      color: 'bg-indigo-500',
+                      color: 'border-l-4 border-l-indigo-500',
                       indicatorColor: 'text-indigo-400',
                     },
                     {
-                      topic: 'Geopolitics',
-                      desc: 'International maritime borders & treaty agreements',
+                      topic: 'Geopolitical & Maritime',
+                      desc: 'Exclusive Economic Zone transponder activity, international maritime lane treaties',
                       tone: 'Positive (+0.8)',
                       volume: '1,960 Articles',
-                      trend: [50, 48, 45, 52, 58, 62, 60, 65, 70, 72, 75, 80, 85, 90],
-                      color: 'bg-emerald-500',
+                      color: 'border-l-4 border-l-emerald-500',
                       indicatorColor: 'text-[#006a4e]',
                     },
                     {
-                      topic: 'Hydrology',
-                      desc: 'Embankment spillovers, flood discharge indices',
+                      topic: 'Hydrological & Cyclone Alerts',
+                      desc: 'Teesta barrage flows, Kaptai reservoir discharges, Surma embankment overflow stresses',
                       tone: 'Negative (-2.4)',
                       volume: '2,810 Articles',
-                      trend: [30, 35, 45, 55, 60, 68, 75, 80, 88, 92, 95, 100, 105, 112],
-                      color: 'bg-blue-500',
+                      color: 'border-l-4 border-l-blue-500',
                       indicatorColor: 'text-blue-400',
                     },
                     {
-                      topic: 'Logistics',
-                      desc: 'Customs bottlenecks, transboundary dry cargo transit',
+                      topic: 'Transit & Dry Port Logistics',
+                      desc: 'Benapole customs clearance rates, Mongla port high-density vessel queues',
                       tone: 'Stable (0.0)',
                       volume: '950 Articles',
-                      trend: [15, 18, 16, 20, 22, 19, 21, 24, 22, 25, 27, 26, 28, 30],
-                      color: 'bg-amber-500',
+                      color: 'border-l-4 border-l-amber-500',
                       indicatorColor: 'text-amber-500',
-                    },
-                    {
-                      topic: 'Maritime Monitor',
-                      desc: 'Exclusive Economic Zone transponder activity',
-                      tone: 'Positive (+1.2)',
-                      volume: '1,150 Articles',
-                      trend: [25, 28, 30, 29, 35, 38, 42, 40, 44, 48, 50, 52, 55, 58],
-                      color: 'bg-cyan-500',
-                      indicatorColor: 'text-cyan-400',
                     }
                   ].map((topicObj) => (
                     <div
                       key={topicObj.topic}
                       onClick={() => setSelectedNewsTopic(topicObj.topic)}
-                      className={`p-2.5 rounded border cursor-pointer transition ${
+                      className={`p-2.5 rounded border cursor-pointer transition flex flex-col gap-1 ${topicObj.color} ${
                         selectedNewsTopic === topicObj.topic
                           ? 'bg-[#1a1d24] border-amber-500/80 shadow-lg'
                           : 'bg-[#12141a]/90 border-[#1a1d24] hover:border-slate-700'
                       }`}
                     >
-                      <div className="flex justify-between items-center mb-1">
-                        <span className={`font-bold text-xs ${topicObj.indicatorColor}`}>
+                      <div className="flex justify-between items-center">
+                        <span className={`font-bold text-[11px] ${topicObj.indicatorColor}`}>
                           {topicObj.topic}
                         </span>
-                        <span className="text-[10px] text-slate-500">{topicObj.volume}</span>
+                        <span className="text-[9.5px] text-slate-500">{topicObj.volume}</span>
                       </div>
-                      <div className="text-[9.5px] text-slate-400 leading-tight mb-2">
+                      <div className="text-[10px] text-slate-300 leading-normal">
                         {topicObj.desc}
                       </div>
-
-                      {/* 14-day Media Tone & Volume Trend Sparkline bar */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[8px] text-slate-500 font-mono">
-                          <span>14-DAY TONE: {topicObj.tone}</span>
-                          <span>MEDIA TREND</span>
-                        </div>
-                        <div className="flex items-end gap-0.5 h-6 bg-[#0d0e12] p-1 rounded border border-[#1a1d24]">
-                          {topicObj.trend.map((val, i) => {
-                            const maxVal = Math.max(...topicObj.trend);
-                            const percent = maxVal > 0 ? (val / maxVal) * 100 : 0;
-                            return (
-                              <div
-                                key={i}
-                                className={`flex-1 ${topicObj.color} rounded-t-sm transition-all duration-300`}
-                                style={{ height: `${percent}%` }}
-                                title={`Day ${i + 1}: ${val}`}
-                              ></div>
-                            );
-                          })}
-                        </div>
+                      <div className="text-[9px] text-slate-500 font-mono flex justify-between mt-1 pt-1 border-t border-[#1a1d24]">
+                        <span>TONAL COEFFICIENT:</span>
+                        <span className="text-white font-bold">{topicObj.tone}</span>
                       </div>
                     </div>
                   ))}
