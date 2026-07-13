@@ -109,6 +109,10 @@ interface MonitorState {
   setByokKey: (key: string) => void;
   setByokProvider: (provider: 'groq' | 'openai' | 'openrouter') => void;
 
+  // Map Mode (Day/Night)
+  mapMode: 'dark' | 'light';
+  setMapMode: (mode: 'dark' | 'light') => void;
+
   // Risk Score
   riskAnalysis: RiskAnalysis;
   setRiskAnalysis: (analysis: RiskAnalysis) => void;
@@ -303,6 +307,10 @@ export const useStore = create<MonitorState>((set) => ({
   byokProvider: 'groq',
   setByokKey: (byokKey) => set({ byokKey }),
   setByokProvider: (byokProvider) => set({ byokProvider }),
+
+  // Map Mode
+  mapMode: 'dark',
+  setMapMode: (mapMode) => set({ mapMode }),
 
   // Subcontinental Risk Matrix
   riskAnalysis: {

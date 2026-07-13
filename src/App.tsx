@@ -61,6 +61,8 @@ export default function App() {
     byokProvider,
     setByokKey,
     setByokProvider,
+    mapMode,
+    setMapMode,
     riskAnalysis,
     setRiskAnalysis,
   } = useStore();
@@ -355,12 +357,23 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
             </span>
           </div>
 
+          {/* Map Mode Toggle Button */}
+          <button
+            onClick={() => setMapMode(mapMode === 'dark' ? 'light' : 'dark')}
+            aria-label={`Switch to ${mapMode === 'dark' ? 'light' : 'dark'} mode`}
+            className="flex items-center justify-center p-1.5 rounded bg-[#1a1d24] hover:bg-brand-emerald/20 text-slate-300 hover:text-[#00d084] border border-[#1a1d24] transition"
+            title={`Switch to ${mapMode === 'dark' ? 'Day' : 'Night'} Map Mode`}
+          >
+            <CloudSun className="w-4 h-4" />
+          </button>
+
           <button
             onClick={() => {
               setLocalKey(byokKey);
               setLocalProvider(byokProvider);
               setIsByokOpen(true);
             }}
+            aria-label="Open BYOK AI settings"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#1a1d24] hover:bg-brand-emerald/20 hover:text-[#00d084] border border-[#1a1d24] text-xs transition font-mono"
           >
             <Settings className="w-3.5 h-3.5" />
@@ -371,8 +384,8 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
       {/* Left-Hand Collapsible Command Drawer */}
       <aside
-        className={`absolute top-16 left-4 z-10 w-[23rem] max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl transition-all duration-300 flex flex-col ${
-          isCommandSheetOpen ? 'translate-x-0' : '-translate-x-[25rem]'
+        className={`absolute top-16 left-4 z-10 w-[90%] sm:w-[23rem] max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl transition-all duration-300 flex flex-col ${
+          isCommandSheetOpen ? 'translate-x-0' : '-translate-x-[110%] sm:-translate-x-[25rem]'
         }`}
       >
         <div className="glass-panel w-full flex flex-col rounded-lg overflow-hidden border border-brand-border">
@@ -432,9 +445,10 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
             <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
               <button
                 onClick={() => toggleLayer('incidents')}
-                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center ${
+                aria-label="Toggle OSINT Incidents Layer"
+                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center focus-visible:ring-2 focus-visible:ring-brand-emerald focus-visible:outline-none ${
                   layersVisibility.incidents
-                    ? 'bg-brand-emerald/10 text-[#006a4e] border-brand-emerald/40 font-bold'
+                    ? 'bg-brand-emerald/15 text-emerald-400 border-brand-emerald/40 font-bold'
                     : 'bg-[#0d0e12] text-slate-500 border-[#1a1d24]'
                 }`}
               >
@@ -444,9 +458,10 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
               <button
                 onClick={() => toggleLayer('criticalAssets')}
-                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center ${
+                aria-label="Toggle Critical Assets Layer"
+                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none ${
                   layersVisibility.criticalAssets
-                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/40 font-bold'
+                    ? 'bg-blue-500/15 text-blue-400 border-blue-500/40 font-bold'
                     : 'bg-[#0d0e12] text-slate-500 border-[#1a1d24]'
                 }`}
               >
@@ -456,9 +471,10 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
               <button
                 onClick={() => toggleLayer('shippingCorridors')}
-                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center ${
+                aria-label="Toggle Shipping Lanes Layer"
+                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
                   layersVisibility.shippingCorridors
-                    ? 'bg-amber-500/10 text-amber-500 border-amber-500/40 font-bold'
+                    ? 'bg-amber-500/15 text-amber-500 border-amber-500/40 font-bold'
                     : 'bg-[#0d0e12] text-slate-500 border-[#1a1d24]'
                 }`}
               >
@@ -468,9 +484,10 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
               <button
                 onClick={() => toggleLayer('waterways')}
-                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center ${
+                aria-label="Toggle Waterways Flow Layer"
+                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   layersVisibility.waterways
-                    ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/40 font-bold'
+                    ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/40 font-bold'
                     : 'bg-[#0d0e12] text-slate-500 border-[#1a1d24]'
                 }`}
               >
@@ -480,9 +497,10 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
               <button
                 onClick={() => toggleLayer('weather')}
-                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center ${
+                aria-label="Toggle Meteorology Sensors Layer"
+                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none ${
                   layersVisibility.weather
-                    ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/40 font-bold'
+                    ? 'bg-indigo-500/15 text-indigo-400 border-indigo-500/40 font-bold'
                     : 'bg-[#0d0e12] text-slate-500 border-[#1a1d24]'
                 }`}
               >
@@ -495,9 +513,10 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
               <button
                 onClick={() => toggleLayer('rssFeeds')}
-                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center ${
+                aria-label="Toggle Live RSS Pins Layer"
+                className={`py-1.5 px-2 rounded border text-left transition flex justify-between items-center focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none ${
                   layersVisibility.rssFeeds
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40 font-bold'
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 font-bold'
                     : 'bg-[#0d0e12] text-slate-500 border-[#1a1d24]'
                 }`}
               >
@@ -842,7 +861,7 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
       {/* Feature Details Inspector (Pops out from the right when an asset, incident or news item is clicked) */}
       {selectedFeature && (
-        <aside className="absolute top-16 right-4 z-10 w-96 max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl flex flex-col glass-panel border border-brand-border">
+        <aside className="absolute top-16 right-4 z-10 w-[90%] sm:w-96 max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl flex flex-col glass-panel border border-brand-border">
           <div className="p-3 bg-[#12141a] border-b border-brand-border flex items-center justify-between rounded-t-lg">
             <span className="text-xs font-bold tracking-wider text-slate-300 uppercase">
               {selectedFeature.featureType} INSPECTOR LOG

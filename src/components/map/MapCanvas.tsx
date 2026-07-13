@@ -72,8 +72,14 @@ export default function MapCanvas() {
     });
   }, [setViewState]);
 
-  // Free CartoDB Dark Matter style JSON for matte charcoal visual aesthetics
-  const mapStyle = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+  const { mapMode } = useStore();
+
+  // Switch styles based on Map Mode state
+  const mapStyle = useMemo(() => {
+    return mapMode === 'light'
+      ? 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+      : 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+  }, [mapMode]);
 
   // Compute active cluster nodes and raw points to feed Deck.gl
   const visibleIncidentData = useMemo(() => {
@@ -239,7 +245,7 @@ export default function MapCanvas() {
             if (d.condition === 'cyclonic') return [255, 59, 48, opacityByte];
             if (d.condition === 'stormy') return [245, 180, 0, opacityByte];
             if (d.condition === 'rainy') return [30, 144, 255, opacityByte];
-            return [0, 208, 132, opacityByte];
+            return mapMode === 'light' ? [0, 106, 78, opacityByte] : [0, 208, 132, opacityByte];
           },
           updateTriggers: {
             getRadius: [pulsePhase],
@@ -266,11 +272,11 @@ export default function MapCanvas() {
             if (d.condition === 'cyclonic') return [255, 59, 48];
             if (d.condition === 'stormy') return [245, 180, 0];
             if (d.condition === 'rainy') return [30, 144, 255];
-            return [0, 208, 132];
+            return mapMode === 'light' ? [0, 106, 78] : [0, 208, 132];
           },
           getLineColor: (d: WeatherStation) => {
-            if (selectedFeature?.id === d.id) return [255, 255, 255];
-            return [15, 20, 25];
+            if (selectedFeature?.id === d.id) return mapMode === 'light' ? [15, 20, 25] : [255, 255, 255];
+            return mapMode === 'light' ? [240, 240, 240] : [15, 20, 25];
           },
           onClick: (info: any) => {
             if (info.object) {
@@ -302,11 +308,11 @@ export default function MapCanvas() {
           getRadius: 1000,
           getFillColor: (d: any) => {
             if (d.translated) return [245, 180, 0]; // Translated Bangla is Amber
-            return [0, 208, 132]; // Standard English RSS is Emerald Green
+            return mapMode === 'light' ? [0, 106, 78] : [0, 208, 132]; // Standard English RSS
           },
           getLineColor: (d: any) => {
-            if (selectedFeature?.link === d.link) return [255, 255, 255];
-            return [15, 20, 25];
+            if (selectedFeature?.link === d.link) return mapMode === 'light' ? [15, 20, 25] : [255, 255, 255];
+            return mapMode === 'light' ? [240, 240, 240] : [15, 20, 25];
           },
           onClick: (info: any) => {
             if (info.object) {
@@ -339,11 +345,11 @@ export default function MapCanvas() {
           getFillColor: (d: DBCriticalAsset) => {
             if (d.status === 'damaged') return [255, 59, 48]; // Crimson Alert
             if (d.status === 'alert') return [245, 180, 0]; // Warning Yellow
-            return [0, 208, 132]; // Emerald Nominal
+            return mapMode === 'light' ? [0, 106, 78] : [0, 208, 132]; // Emerald Nominal
           },
           getLineColor: (d: DBCriticalAsset) => {
-            if (selectedFeature?.id === d.id) return [255, 255, 255];
-            return [15, 20, 25];
+            if (selectedFeature?.id === d.id) return mapMode === 'light' ? [15, 20, 25] : [255, 255, 255];
+            return mapMode === 'light' ? [240, 240, 240] : [15, 20, 25];
           },
           onClick: (info: any) => {
             if (info.object) {
@@ -388,12 +394,12 @@ export default function MapCanvas() {
             // Individual node
             if (d.severity === 'critical') return [255, 59, 48];
             if (d.severity === 'warning') return [245, 180, 0];
-            return [0, 106, 78]; // nominal emerald
+            return mapMode === 'light' ? [0, 80, 50] : [0, 106, 78]; // nominal emerald
           },
           getLineColor: (d: any) => {
             const id = d.properties?.cluster ? `cluster-${d.id}` : d.id;
-            if (selectedFeature?.id === id) return [255, 255, 255];
-            return [10, 12, 16];
+            if (selectedFeature?.id === id) return mapMode === 'light' ? [15, 20, 25] : [255, 255, 255];
+            return mapMode === 'light' ? [240, 240, 240] : [10, 12, 16];
           },
           onClick: (info: any) => {
             if (info.object) {
@@ -438,6 +444,16 @@ export default function MapCanvas() {
     viewState,
   ]);
 
+  const resetDeltaCenter = useCallback(() => {
+    setViewState({
+      longitude: 90.3563,
+      latitude: 23.6850,
+      zoom: 6.5,
+      pitch: 25,
+      bearing: 0,
+    });
+  }, [setViewState]);
+
   return (
     <div className="relative w-full h-full">
       <DeckGL
@@ -465,41 +481,46 @@ export default function MapCanvas() {
       </DeckGL>
 
       {/* Real-time coordinates clamp HUD panel */}
-      <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
-        <div className="glass-panel px-3 py-2.5 text-xs flex flex-col gap-1 rounded-md shadow-2xl text-slate-400 font-mono border border-brand-border">
-          <div className="text-slate-300 font-bold border-b border-[#1a1d24] pb-1.5 mb-1.5 flex items-center gap-1.5">
+      <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 max-w-[200px] sm:max-w-xs">
+        <div className={`px-3 py-2.5 text-xs flex flex-col gap-1 rounded-md shadow-2xl font-mono border transition ${
+          mapMode === 'light'
+            ? 'bg-white/95 text-slate-700 border-slate-200'
+            : 'glass-panel text-slate-400 border-brand-border'
+        }`}>
+          <div className={`font-bold border-b pb-1.5 mb-1.5 flex items-center gap-1.5 ${
+            mapMode === 'light' ? 'text-slate-800 border-slate-200' : 'text-slate-300 border-[#1a1d24]'
+          }`}>
             <span className="w-2 h-2 rounded-full bg-[#006a4e] animate-pulse"></span>
-            WORKSTATION HUD v2.0
+            WORKSTATION HUD
           </div>
           <div className="flex justify-between gap-4">
             <span>BOUNDS LOCK:</span>
             <span className="text-[#006a4e] font-bold">ENGAGED</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span>MAP LATITUDE:</span>
-            <span className="text-slate-200">{viewState.latitude.toFixed(5)}°N</span>
+            <span>LATITUDE:</span>
+            <span className={mapMode === 'light' ? 'text-slate-900 font-bold' : 'text-slate-200 font-bold'}>
+              {viewState.latitude.toFixed(4)}°N
+            </span>
           </div>
           <div className="flex justify-between gap-4">
-            <span>MAP LONGITUDE:</span>
-            <span className="text-slate-200">{viewState.longitude.toFixed(5)}°E</span>
+            <span>LONGITUDE:</span>
+            <span className={mapMode === 'light' ? 'text-slate-900 font-bold' : 'text-slate-200 font-bold'}>
+              {viewState.longitude.toFixed(4)}°E
+            </span>
           </div>
           <div className="flex justify-between gap-4">
-            <span>SCALE LEVEL:</span>
-            <span className="text-slate-200">{viewState.zoom.toFixed(1)}x</span>
+            <span>ZOOM LEVEL:</span>
+            <span className={mapMode === 'light' ? 'text-slate-900 font-bold' : 'text-slate-200 font-bold'}>
+              {viewState.zoom.toFixed(1)}x
+            </span>
           </div>
           <button
-            onClick={() =>
-              setViewState({
-                longitude: 90.3563,
-                latitude: 23.6850,
-                zoom: 6.5,
-                pitch: 25,
-                bearing: 0,
-              })
-            }
-            className="mt-2.5 w-full text-center py-1.5 bg-[#006a4e] text-white rounded font-sans font-bold hover:bg-emerald-700 transition"
+            onClick={resetDeltaCenter}
+            aria-label="Clamp map back to Bangladesh center"
+            className="mt-2.5 w-full text-center py-1.5 bg-[#006a4e] hover:bg-[#005a42] text-white rounded font-sans font-bold focus-visible:ring-2 focus-visible:ring-emerald-400 transition"
           >
-            CLAMP TO DELTA CENTER
+            RESET VIEWPORT
           </button>
         </div>
       </div>
