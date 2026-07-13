@@ -261,6 +261,9 @@ export default function MapCanvas() {
           mapLib={maplibregl}
           mapStyle={mapStyle}
           attributionControl={false}
+          onError={(e) => {
+            console.warn('MapLibre GL Map Canvas loading warning/error:', e);
+          }}
         />
       </DeckGL>
 
