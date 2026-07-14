@@ -275,6 +275,10 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
   useEffect(() => {
     if (selectedFeature) {
       executeAiAnalysis(selectedFeature);
+      // Automatically close the left drawer on small/mobile screens to avoid screen cluttering
+      if (window.innerWidth < 640) {
+        setIsCommandSheetOpen(false);
+      }
     }
   }, [selectedFeature]);
 
@@ -320,40 +324,39 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
       </div>
 
       {/* Cinematic Top Control HUD Header */}
-      <header className="absolute top-0 left-0 right-0 z-10 glass-panel h-14 px-4 flex items-center justify-between border-b border-brand-border shadow-2xl">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded border border-brand-emerald bg-brand-emerald/10 text-brand-emerald">
-            <ShieldAlert className="w-5 h-5 animate-pulse" />
+      <header className="absolute top-0 left-0 right-0 z-30 glass-panel h-14 px-3 sm:px-4 flex items-center justify-between border-b border-brand-border shadow-2xl">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded border border-brand-emerald bg-brand-emerald/10 text-brand-emerald shrink-0">
+            <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
           </div>
           <div>
-            <span className="font-extrabold text-sm tracking-widest text-slate-100">
-              BANGLADESHMONTOR <span className="text-[#006a4e] text-xs font-mono">v2.0</span>
+            <span className="font-extrabold text-[11px] sm:text-sm tracking-wider sm:tracking-widest text-slate-100 uppercase">
+              BD MONITOR <span className="text-[#006a4e] text-[9px] sm:text-xs font-mono">v2.0</span>
             </span>
           </div>
         </div>
 
         {/* Live Dhaka BST Clock */}
-        <div className="hidden md:flex items-center gap-2 text-xs text-slate-400 font-mono">
+        <div className="hidden lg:flex items-center gap-2 text-xs text-slate-400 font-mono">
           <Compass className="w-4 h-4 text-[#006a4e] animate-spin" style={{ animationDuration: '8s' }} />
           <span>{dhakaTime}</span>
         </div>
 
         {/* Subcontinental Risk Status Index */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 bg-[#12141a]/95 border border-[#1a1d24] px-3 py-1 rounded">
-            <span className="text-[10px] text-slate-400 font-mono">INSTABILITY INDEX:</span>
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 bg-[#12141a]/95 border border-[#1a1d24] px-2 py-1 rounded text-[10px] sm:text-xs">
+            <span className="hidden md:inline text-[9px] text-slate-400 font-mono">INSTABILITY:</span>
             <div className="flex items-center gap-1">
               <span
-                className={`w-2 h-2 rounded-full ${
+                className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
                   riskAnalysis.riskScore > 60 ? 'bg-[#ff3b30] animate-ping' : 'bg-[#00d084]'
                 }`}
               ></span>
-              <span className={`font-mono text-xs font-bold ${riskAnalysis.riskScore > 60 ? 'text-[#ff3b30]' : 'text-[#00d084]'}`}>
+              <span className={`font-mono text-[11px] sm:text-xs font-bold ${riskAnalysis.riskScore > 60 ? 'text-[#ff3b30]' : 'text-[#00d084]'}`}>
                 {riskAnalysis.riskScore}
               </span>
-              <span className="text-[9px] text-slate-500 font-mono">/100</span>
             </div>
-            <span className="text-[10px] text-slate-500 capitalize font-mono">
+            <span className="hidden sm:inline text-[9px] text-slate-500 capitalize font-mono">
               ({riskAnalysis.trend})
             </span>
           </div>
@@ -362,10 +365,10 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
           <button
             onClick={() => setMapMode(mapMode === 'dark' ? 'light' : 'dark')}
             aria-label={`Switch to ${mapMode === 'dark' ? 'light' : 'dark'} mode`}
-            className="flex items-center justify-center p-1.5 rounded bg-[#1a1d24] hover:bg-brand-emerald/20 text-slate-300 hover:text-[#00d084] border border-[#1a1d24] transition"
+            className="flex items-center justify-center p-1.5 rounded bg-[#1a1d24] hover:bg-brand-emerald/20 text-slate-300 hover:text-[#00d084] border border-[#1a1d24] transition h-8 w-8 sm:h-auto sm:w-auto"
             title={`Switch to ${mapMode === 'dark' ? 'Day' : 'Night'} Map Mode`}
           >
-            <CloudSun className="w-4 h-4" />
+            <CloudSun className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
 
           <button
@@ -375,33 +378,42 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
               setIsByokOpen(true);
             }}
             aria-label="Open BYOK AI settings"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#1a1d24] hover:bg-brand-emerald/20 hover:text-[#00d084] border border-[#1a1d24] text-xs transition font-mono"
+            className="flex items-center justify-center sm:gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded bg-[#1a1d24] hover:bg-brand-emerald/20 hover:text-[#00d084] border border-[#1a1d24] text-xs transition font-mono h-8 w-8 sm:h-auto sm:w-auto"
+            title="BYOK AI Credentials"
           >
             <Settings className="w-3.5 h-3.5" />
-            <span>BYOK AI</span>
+            <span className="hidden sm:inline">BYOK AI</span>
           </button>
         </div>
       </header>
 
       {/* Left-Hand Collapsible Command Drawer */}
       <aside
-        className={`absolute top-16 left-4 z-10 w-[90%] sm:w-[24rem] max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl transition-all duration-300 flex flex-col ${
-          isCommandSheetOpen ? 'translate-x-0' : '-translate-x-[110%] sm:-translate-x-[26rem]'
+        className={`absolute top-16 left-4 z-20 w-[92%] sm:w-[24rem] max-h-[calc(100vh-18rem)] sm:max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl transition-all duration-300 flex flex-col ${
+          isCommandSheetOpen ? 'translate-x-0' : '-translate-x-[115%] sm:-translate-x-[26rem]'
         }`}
       >
-        <div className="glass-panel w-full flex flex-col rounded-lg overflow-hidden border border-brand-border">
+        <div className="glass-panel w-full flex flex-col rounded-lg overflow-hidden border border-brand-border h-full">
           {/* Section Header */}
-          <div className="p-3 bg-[#12141a] border-b border-brand-border flex items-center justify-between">
+          <div className="p-2 sm:p-3 bg-[#12141a] border-b border-brand-border flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Radio className="w-4 h-4 text-[#ff3b30] animate-pulse" />
-              <span className="text-xs font-bold tracking-wider text-slate-300">
+              <span className="text-[11px] sm:text-xs font-bold tracking-wider text-slate-300 uppercase">
                 TACTICAL CONTROL SHEET
               </span>
             </div>
+            {/* Close drawer button directly inside header on mobile to improve UX */}
+            <button
+              onClick={() => setIsCommandSheetOpen(false)}
+              aria-label="Close Control Sheet"
+              className="sm:hidden text-slate-500 hover:text-white font-mono text-[10px]"
+            >
+              [HIDE]
+            </button>
           </div>
 
           {/* Instability metrics and Welford variance analytics */}
-          <div className="p-3 bg-[#0d0e12]/95 border-b border-brand-border flex flex-col gap-2 font-mono text-xs">
+          <div className="p-2 sm:p-3 bg-[#0d0e12]/95 border-b border-brand-border flex flex-col gap-1.5 sm:gap-2 font-mono text-xs">
             <div className="text-[9px] text-slate-400 font-bold tracking-wider uppercase mb-1 flex justify-between">
               <span>WELFORD COEFFICIENTS</span>
               <span className="text-[#ff3b30]">STRESS VELOCITY: {riskAnalysis.velocity}</span>
@@ -438,7 +450,7 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
           </div>
 
           {/* Dynamic Layer Toggles HUD Panel */}
-          <div className="p-3 border-b border-[#1a1d24] bg-[#12141a]/95 flex flex-col gap-1.5">
+          <div className="p-2 sm:p-3 border-b border-[#1a1d24] bg-[#12141a]/95 flex flex-col gap-1.5">
             <div className="text-[9px] text-slate-400 font-bold tracking-wider uppercase mb-0.5 flex items-center gap-1">
               <Layers className="w-3 h-3 text-[#00d084]" />
               <span>DYNAMIC LAYER REGISTRY</span>
@@ -536,14 +548,14 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
               <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-500" />
               <input
                 type="text"
-                placeholder="Search indices, title, or status..."
+                placeholder="Fuzzy search..."
                 value={searchQuery}
                 onChange={(e) => startTransition(() => setSearchQuery(e.target.value))}
                 className="w-full pl-8 pr-2 py-1.5 rounded bg-[#0d0e12] border border-[#1a1d24] text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-emerald font-mono"
               />
             </div>
 
-            <div className="grid grid-cols-6 gap-0.5 text-[8px] sm:text-[8.5px] font-bold text-center">
+            <div className="grid grid-cols-6 gap-0.5 text-[8px] sm:text-[8.5px] font-bold text-center overflow-x-auto">
               <button
                 onClick={() => setActiveTab('all')}
                 aria-label="Show all records"
@@ -602,7 +614,7 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
           </div>
 
           {/* Scrolling List Panel */}
-          <div className="flex-1 overflow-y-auto max-h-[20rem] bg-[#12141a]/60 font-mono text-xs divide-y divide-[#1a1d24]">
+          <div className="flex-1 overflow-y-auto max-h-[14rem] sm:max-h-[20rem] bg-[#12141a]/60 font-mono text-xs divide-y divide-[#1a1d24]">
             {(activeTab === 'all' || activeTab === 'incidents') &&
               filteredIncidents.map((inc) => (
                 <div
@@ -897,30 +909,30 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
       </button>
 
       {/* Bottom Floating Glass Dashboard Panel (Timeline Playback Scrubber & Live news Ticker) */}
-      <footer className="absolute bottom-4 left-4 right-4 z-10 glass-panel p-4 rounded-lg border border-brand-border shadow-2xl flex flex-col gap-3 font-mono">
+      <footer className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 z-10 glass-panel p-2.5 sm:p-4 rounded-lg border border-brand-border shadow-2xl flex flex-col gap-2 sm:gap-3 font-mono">
 
         {/* News Ticker + Playback speed status */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 border-r border-[#1a1d24] pr-4 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-1 sm:gap-2 border-r border-[#1a1d24] pr-2 sm:pr-4 shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#ff3b30] animate-ping"></span>
-            <span className="text-[10px] text-brand-crimson font-bold flex items-center gap-1">
-              <Newspaper className="w-3.5 h-3.5" />
-              INTELLIGENCE NEWS TICKER:
+            <span className="text-[9px] sm:text-[10px] text-brand-crimson font-bold flex items-center gap-1">
+              <Newspaper className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+              <span className="hidden sm:inline">INTELLIGENCE</span> TICKER:
             </span>
           </div>
 
           <div className="flex-1 overflow-hidden relative h-5">
-            <div className="absolute inset-0 flex items-center gap-8 whitespace-nowrap animate-marquee">
+            <div className="absolute inset-0 flex items-center gap-4 sm:gap-8 whitespace-nowrap animate-marquee">
               {news.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => setSelectedFeature({ ...item, featureType: 'News' })}
-                  className="inline-flex items-center gap-2 hover:bg-[#1a1d24] p-1 rounded cursor-pointer transition text-xs"
+                  className="inline-flex items-center gap-1.5 hover:bg-[#1a1d24] p-1 rounded cursor-pointer transition text-[11px]"
                 >
-                  <span className={`text-[9px] px-1 rounded font-bold uppercase ${item.impact === 'high' ? 'bg-red-500/10 text-brand-crimson border border-red-500/20' : 'bg-[#006a4e]/20 text-[#006a4e]'}`}>
+                  <span className={`text-[8.5px] px-1 rounded font-bold uppercase ${item.impact === 'high' ? 'bg-red-500/10 text-brand-crimson border border-red-500/20' : 'bg-[#006a4e]/20 text-[#006a4e]'}`}>
                     {item.category}
                   </span>
-                  <span className="text-slate-300 font-bold truncate max-w-sm">{item.title}</span>
+                  <span className="text-slate-300 font-bold truncate max-w-[150px] sm:max-w-sm">{item.title}</span>
                 </div>
               ))}
             </div>
@@ -928,54 +940,59 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
         </div>
 
         {/* Temporal scrubbing multi-speed line controls */}
-        <div className="grid grid-cols-12 gap-4 items-center border-t border-[#1a1d24] pt-3">
+        <div className="flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:gap-4 items-center border-t border-[#1a1d24] pt-2 sm:pt-3">
 
           {/* Controls button group */}
-          <div className="col-span-3 flex items-center gap-2 border-r border-[#1a1d24] pr-4">
-            <button
-              onClick={() => setTimelineIsPlaying(!timelineIsPlaying)}
-              className={`p-1.5 rounded transition ${timelineIsPlaying ? 'bg-[#ff3b30]/10 text-brand-crimson border border-[#ff3b30]/30' : 'bg-brand-emerald/10 text-brand-emerald border border-brand-emerald/30'}`}
-              title={timelineIsPlaying ? 'Pause Simulation' : 'Start Log Playback Simulation'}
-            >
-              {timelineIsPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 animate-pulse" />}
-            </button>
+          <div className="w-full sm:col-span-4 flex items-center justify-between sm:justify-start gap-2 sm:border-r sm:border-[#1a1d24] sm:pr-4">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setTimelineIsPlaying(!timelineIsPlaying)}
+                aria-label={timelineIsPlaying ? 'Pause Simulation' : 'Start Log Playback Simulation'}
+                className={`p-1 rounded transition ${timelineIsPlaying ? 'bg-[#ff3b30]/10 text-brand-crimson border border-[#ff3b30]/30' : 'bg-brand-emerald/10 text-brand-emerald border border-brand-emerald/30'}`}
+                title={timelineIsPlaying ? 'Pause Simulation' : 'Start Log Playback Simulation'}
+              >
+                {timelineIsPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 animate-pulse" />}
+              </button>
 
-            <div className="flex gap-1">
-              {[1, 2, 5].map((speed) => (
-                <button
-                  key={speed}
-                  onClick={() => setTimelineSpeed(speed)}
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold border transition ${
-                    timelineSpeed === speed ? 'bg-[#006a4e] border-[#006a4e] text-white' : 'bg-[#0d0e12] border-[#1a1d24] text-slate-500 hover:text-white'
-                  }`}
-                >
-                  {speed}x
-                </button>
-              ))}
+              <div className="flex gap-0.5">
+                {[1, 2, 5].map((speed) => (
+                  <button
+                    key={speed}
+                    onClick={() => setTimelineSpeed(speed)}
+                    aria-label={`Set speed to ${speed}x`}
+                    className={`px-1 rounded text-[9.5px] font-bold border transition ${
+                      timelineSpeed === speed ? 'bg-[#006a4e] border-[#006a4e] text-white' : 'bg-[#0d0e12] border-[#1a1d24] text-slate-500 hover:text-white'
+                    }`}
+                  >
+                    {speed}x
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="ml-2 flex items-center gap-1.5 text-[9px] text-slate-500 uppercase">
-              <FastForward className="w-3.5 h-3.5 animate-pulse text-brand-emerald" />
-              <span>LOG STREAMING</span>
+            <div className="flex items-center gap-1 text-[8.5px] text-slate-500 uppercase">
+              <FastForward className="w-3 h-3 text-brand-emerald shrink-0" />
+              <span>LIVE LOGS</span>
             </div>
           </div>
 
           {/* Slicing Slider range */}
-          <div className="col-span-6 flex items-center gap-3">
-            <span className="text-[10px] text-slate-500 font-mono">TEMPORAL WINDOW SLIDER</span>
+          <div className="w-full sm:col-span-5 flex items-center gap-2">
+            <span className="hidden md:inline text-[9px] text-slate-500 font-mono">TEMPORAL</span>
             <input
               type="range"
+              aria-label="Temporal window scrubber"
               min={Date.now() - 86400000} // past 24 hours
               max={Date.now() + 86400000} // future 24 hours
               value={timelineTime}
               onChange={(e) => setTimelineTime(Number(e.target.value))}
-              className="flex-1 accent-brand-emerald cursor-pointer bg-[#0d0e12] h-1 rounded-full outline-none"
+              className="flex-1 accent-brand-emerald cursor-pointer bg-[#0d0e12] h-1 sm:h-1.5 rounded-full outline-none"
             />
           </div>
 
-          <div className="col-span-3 text-right font-mono text-[10px] text-slate-400">
-            <div>LOG OFFSET INDEX:</div>
-            <div className="text-white font-bold">{new Date(timelineTime).toLocaleTimeString()}</div>
+          <div className="w-full sm:col-span-3 text-right flex justify-between sm:block font-mono text-[9px] text-slate-400">
+            <span className="sm:hidden">LOG OFFSET INDEX:</span>
+            <div className="text-white font-bold text-[10px]">{new Date(timelineTime).toLocaleTimeString()}</div>
           </div>
 
         </div>
