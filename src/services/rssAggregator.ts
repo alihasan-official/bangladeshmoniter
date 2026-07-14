@@ -1,19 +1,6 @@
 import { RSSArticle } from '../store/useStore';
 
-// Expanded list of premium RSS feeds from Bangladesh news portals
-const PORTALS = [
-  { name: 'Dhaka Tribune', url: 'https://www.dhakatribune.com/feed' },
-  { name: 'Daily Sun', url: 'https://www.daily-sun.com/magazine/rss' },
-  { name: 'JagoNews24', url: 'https://www.jagonews24.com/rss/rss.xml' },
-  { name: 'Bangla Tribune', url: 'https://www.banglatribune.com/feed' },
-  { name: 'BDNews24', url: 'https://bdnews24.com/?widgetName=rssfeed&widgetId=9&getXmlFeed=true' },
-  { name: 'Prothom Alo English', url: 'https://en.prothomalo.com/feed' },
-  { name: 'The Daily Star', url: 'https://www.thedailystar.net/frontpage/rss.xml' },
-  { name: 'Samakal', url: 'https://samakal.com/feed' }
-];
-
 // Coordinate dictionary for major locations/places in Bangladesh
-// Meticulously reviewed and aligned for accurate coordinates
 const BANGLADESH_LOCATIONS: { [key: string]: { lat: number; lng: number } } = {
   dhaka: { lat: 23.8103, lng: 90.4125 },
   chittagong: { lat: 22.3375, lng: 91.7825 },
@@ -169,7 +156,6 @@ function translateBanglaToEnglish(text: string): string {
 
   // If there are still substantial Bangla characters left, add an automated note
   if (isBanglaText(translatedText)) {
-    // Basic clean-up of common filler verbs/conjunctions to make sentences legible
     translatedText = translatedText
       .replace(/এবং/g, 'and')
       .replace(/ও/g, 'and')
@@ -188,10 +174,6 @@ function translateBanglaToEnglish(text: string): string {
       .replace(/নিচে/g, 'below')
       .replace(/প্রথম/g, 'first')
       .replace(/শেষ/g, 'last');
-
-    // Strip remaining unresolved Bangla characters or transliterate if possible,
-    // to guarantee an English output for UI clarity.
-    // If predominantly unresolved, append [Translated Brief] prefix.
   }
 
   return translatedText;
@@ -247,7 +229,6 @@ function geocodeArticle(title: string, description: string, index: number): { la
   const sortedPlaces = Object.keys(BANGLADESH_LOCATIONS).sort((a, b) => b.length - a.length);
   for (const place of sortedPlaces) {
     if (combinedText.includes(place)) {
-      // Small jitter (0.01) to separate multiple articles referring to the same hub
       const offsetLat = (Math.random() - 0.5) * 0.015;
       const offsetLng = (Math.random() - 0.5) * 0.015;
       return {
@@ -258,7 +239,6 @@ function geocodeArticle(title: string, description: string, index: number): { la
   }
 
   // 2. Scan for matched Bangla dictionary locations
-  // We check the keys of BANGLA_TO_ENGLISH_DICTIONARY that represent places and map them back to BANGLADESH_LOCATIONS
   const sortedBanglaKeys = Object.keys(BANGLA_TO_ENGLISH_DICTIONARY).sort((a, b) => b.length - a.length);
   for (const banglaKey of sortedBanglaKeys) {
     if (combinedText.includes(banglaKey)) {
@@ -275,7 +255,7 @@ function geocodeArticle(title: string, description: string, index: number): { la
     }
   }
 
-  // 3. Fallback: Generate a coordinate within central Bangladesh hubs, deterministically spread using the index/title hash
+  // 3. Fallback coordinate
   const hubs = [
     { name: 'Dhaka Regional Hub', lat: 23.8103, lng: 90.4125 },
     { name: 'Chattogram Coast', lat: 22.3569, lng: 91.7832 },
@@ -288,7 +268,6 @@ function geocodeArticle(title: string, description: string, index: number): { la
   const hubIndex = Math.abs(index) % hubs.length;
   const targetHub = hubs[hubIndex];
 
-  // Deterministic offset based on the string hash
   let hash = 0;
   for (let i = 0; i < title.length; i++) {
     hash = title.charCodeAt(i) + ((hash << 5) - hash);
@@ -303,22 +282,11 @@ function geocodeArticle(title: string, description: string, index: number): { la
 }
 
 /**
- * Extracts a thumbnail URL from HTML description / content strings.
- */
-function extractImgSrc(html: string): string {
-  if (!html) return '';
-  const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
-  return match ? match[1] : '';
-}
-
-/**
  * Clean HTML tags from a text snippet.
  */
 function cleanDescription(html: string): string {
   if (!html) return '';
-  // Strip tags
   let text = html.replace(/<\/?[^>]+(>|$)/g, '');
-  // Unescape common HTML entities
   text = text
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
@@ -330,87 +298,66 @@ function cleanDescription(html: string): string {
 }
 
 /**
- * Fetch a single RSS feed via rss2json CORS bypass API
- */
-async function fetchFeed(portal: typeof PORTALS[0], portalIndex: number): Promise<RSSArticle[]> {
-  const encodedUrl = encodeURIComponent(portal.url);
-  // Use a reliable free CORS bypass proxy client to avoid original domain origin isolation errors
-  const bypassUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.rss2json.com/v1/api.json?rss_url=${encodedUrl}`)}`;
-
-  const response = await fetch(bypassUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${portal.name}: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  if (data.status !== 'ok') {
-    throw new Error(`rss2json response status is not ok for ${portal.name}`);
-  }
-
-  const items = data.items || [];
-  return items.map((item: any, itemIdx: number): RSSArticle => {
-    // Attempt standard thumbnail, enclosure, or extract from description
-    let thumbnail = '';
-    if (item.thumbnail) {
-      thumbnail = item.thumbnail;
-    } else if (item.enclosure && item.enclosure.link) {
-      thumbnail = item.enclosure.link;
-    } else {
-      thumbnail = extractImgSrc(item.description || '') || extractImgSrc(item.content || '');
-    }
-
-    const rawTitle = item.title || 'Untitled Article';
-    const rawDescription = cleanDescription(item.description || item.content || '');
-    const isBangla = isBanglaText(rawTitle) || isBanglaText(rawDescription);
-
-    // Apply rule-based translation if Bangla text is detected
-    const title = isBangla ? translateBanglaToEnglish(rawTitle) : rawTitle;
-    const description = isBangla ? translateBanglaToEnglish(rawDescription) : rawDescription;
-
-    // Run custom geocoding pipeline to pinpoint exact map location
-    const { lat, lng } = geocodeArticle(rawTitle, rawDescription, portalIndex * 100 + itemIdx);
-
-    return {
-      title,
-      link: item.link || '#',
-      pubDate: item.pubDate || item.pub_date || new Date().toISOString(),
-      description,
-      thumbnail,
-      source: portal.name,
-      lat,
-      lng,
-      translated: isBangla,
-      originalLanguage: isBangla ? 'bn' : 'en'
-    };
-  });
-}
-
-/**
  * Aggregates all RSS news feeds concurrently, bypassing CORS,
  * translating Bangla content, geocoding coordinates, and sorting
  * them in strict reverse chronological order.
+ * Utilizes raw Google News RSS feed wrapper.
  */
 export async function aggregateBangladeshNews(): Promise<RSSArticle[]> {
-  const promises = PORTALS.map((portal, idx) =>
-    fetchFeed(portal, idx).catch((err) => {
-      console.warn(`[RSS AGGREGATOR] Gracefully skipped ${portal.name}:`, err);
-      return [] as RSSArticle[];
-    })
-  );
+  try {
+    const rawGoogleNewsUrl = 'https://news.google.com/rss/search?q=bangladesh&hl=en-US';
+    const bypassUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawGoogleNewsUrl)}`;
 
-  const results = await Promise.allSettled(promises);
-  const articles: RSSArticle[] = [];
-
-  results.forEach((res) => {
-    if (res.status === 'fulfilled') {
-      articles.push(...res.value);
+    const response = await fetch(bypassUrl);
+    if (!response.ok) {
+      throw new Error(`CORS proxy returned status: ${response.status}`);
     }
-  });
 
-  // Strict chronological sorting (newest first)
-  return articles.sort((a, b) => {
-    const timeA = new Date(a.pubDate).getTime();
-    const timeB = new Date(b.pubDate).getTime();
-    return timeB - timeA;
-  });
+    const xmlText = await response.text();
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+    const items = xmlDoc.getElementsByTagName('item');
+    const articles: RSSArticle[] = [];
+
+    for (let i = 0; i < Math.min(items.length, 50); i++) {
+      const item = items[i];
+      const rawTitle = item.getElementsByTagName('title')[0]?.textContent || 'Live Strategic Log';
+      const rawDescription = cleanDescription(item.getElementsByTagName('description')[0]?.textContent || '');
+      const link = item.getElementsByTagName('link')[0]?.textContent || '#';
+      const pubDate = item.getElementsByTagName('pubDate')[0]?.textContent || new Date().toISOString();
+
+      const sourceNode = item.getElementsByTagName('source')[0];
+      const source = sourceNode?.textContent || 'Google News';
+
+      const isBangla = isBanglaText(rawTitle) || isBanglaText(rawDescription);
+      const title = isBangla ? translateBanglaToEnglish(rawTitle) : rawTitle;
+      const description = isBangla ? translateBanglaToEnglish(rawDescription) : rawDescription;
+
+      const { lat, lng } = geocodeArticle(rawTitle, rawDescription, i);
+
+      articles.push({
+        title,
+        link,
+        pubDate,
+        description,
+        thumbnail: '',
+        source,
+        lat,
+        lng,
+        translated: isBangla,
+        originalLanguage: isBangla ? 'bn' : 'en'
+      });
+    }
+
+    // Strict chronological sorting (newest first)
+    return articles.sort((a, b) => {
+      const timeA = new Date(a.pubDate).getTime();
+      const timeB = new Date(b.pubDate).getTime();
+      return timeB - timeA;
+    });
+
+  } catch (err) {
+    console.warn('[RSS AGGREGATOR] Failed to crawl and translate Google News feed. Reverting to empty array.', err);
+    return [];
+  }
 }

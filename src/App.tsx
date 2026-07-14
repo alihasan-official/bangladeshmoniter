@@ -9,11 +9,9 @@ import {
   Compass,
   Settings,
   Key,
-  Waves,
   Activity,
   Cpu,
   RefreshCw,
-  Database,
   Download,
   CloudSun,
   ExternalLink,
@@ -259,7 +257,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#0d0e12] text-slate-100 font-sans select-none">
+    <div className="relative w-screen h-screen overflow-hidden bg-[#09090b] text-slate-100 font-sans select-none">
 
       {/* Full-Screen Map Canvas */}
       <div className="absolute inset-0 w-full h-[65vh] sm:h-[65vh] z-0">
@@ -368,20 +366,35 @@ export default function App() {
 
       {/* WorldMonitor Bottom Dashboard Overlay Panel */}
       <section
-        style={{ zIndex: 999 }}
-        className={`fixed bottom-0 left-0 w-full bg-[#0a0a0c]/95 border-t border-[#1a1d24] backdrop-blur-md shadow-2xl flex flex-col transition-all duration-300 ${
+        style={{ zIndex: 999, transition: 'transform 0.3s ease-in-out, height 0.3s ease-in-out' }}
+        className={`fixed bottom-0 left-0 w-full bg-[#09090b]/93 backdrop-blur-md shadow-2xl flex flex-col border-t border-[#3f3f46]/40 ${
           isDashboardCollapsed
             ? 'h-[2.5rem] transform translate-y-0'
-            : 'h-[45vh] md:h-[35vh]'
+            : 'h-[45vh] md:h-[38vh]'
         }`}
       >
-        {/* Toggle Collapse Bar */}
-        <div className="bg-[#12141a]/95 border-b border-[#1a1d24] h-[2.5rem] px-4 flex items-center justify-between font-mono shrink-0">
-          <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-brand-emerald animate-pulse" />
-            <span className="text-[11px] sm:text-xs font-bold tracking-wider text-slate-300 uppercase">
-              WORLDMONITOR BOTTOM DASHBOARD MATRIX
-            </span>
+        {/* Toggle Collapse Bar & Horizontal Tab switcher */}
+        <div className="bg-[#09090b] border-b border-[#3f3f46]/40 h-[2.5rem] px-4 flex items-center justify-between font-mono shrink-0">
+          <div className="flex items-center gap-4 overflow-x-auto select-none">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[#22c55e] animate-pulse" />
+              <span className="hidden sm:inline text-[11px] font-bold tracking-wider text-slate-300 uppercase">
+                TACTICAL CONSOLE:
+              </span>
+            </div>
+
+            {/* Selector matrix switcher: [THE MAP | THE WIRE | STOCKS | STREAMS] */}
+            <div className="flex items-center gap-1 text-[10px]">
+              {['THE MAP', 'THE WIRE', 'STOCKS', 'STREAMS'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setIsDashboardCollapsed(false)}
+                  className="px-2.5 py-1 rounded bg-[#12141a]/60 hover:bg-[#1a1d24] text-slate-300 font-bold border border-[#3f3f46]/35 transition active:scale-95"
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -389,7 +402,7 @@ export default function App() {
             <div className="hidden sm:flex gap-1.5">
               <button
                 onClick={() => exportToGeoJSON(incidents, criticalAssets)}
-                className="p-1 px-1.5 rounded bg-[#1a1d24] hover:bg-brand-emerald hover:text-white border border-[#1a1d24] text-[9.5px] transition flex items-center gap-1"
+                className="p-1 px-1.5 rounded bg-[#1a1d24] hover:bg-[#06b6d4] hover:text-white border border-[#1a1d24] text-[9.5px] transition flex items-center gap-1 font-mono"
                 title="Download GeoJSON Map Layers"
               >
                 <Download className="w-3 h-3" />
@@ -397,7 +410,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => exportToCSV(incidents)}
-                className="p-1 px-1.5 rounded bg-[#1a1d24] hover:bg-brand-emerald hover:text-white border border-[#1a1d24] text-[9.5px] transition flex items-center gap-1"
+                className="p-1 px-1.5 rounded bg-[#1a1d24] hover:bg-[#06b6d4] hover:text-white border border-[#1a1d24] text-[9.5px] transition flex items-center gap-1 font-mono"
                 title="Download CSV Incident Sheet"
               >
                 <Download className="w-3 h-3" />
@@ -416,72 +429,72 @@ export default function App() {
         </div>
 
         {/* Dashboard 4-Column Mosaic Grid */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[#1a1d24] overflow-y-auto md:overflow-hidden h-full">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[#3f3f46]/40 overflow-y-auto md:overflow-hidden h-full">
 
           {/* Column 1: Flight & Maritime Live Streams */}
           <div className="p-3 overflow-y-auto flex flex-col gap-2 font-mono h-full">
-            <div className="text-[9.5px] text-slate-400 font-bold tracking-wider uppercase flex justify-between border-b border-[#1a1d24] pb-1.5">
-              <span>1. AIRSPACE & SEA STREAMS</span>
-              <div className="flex items-center gap-1">
-                {aircraftsStatus === 'offline' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>}
-                <span className={aircraftsStatus === 'offline' ? 'text-amber-500' : 'text-purple-400'}>
-                  {aircraftsStatus === 'offline' ? 'LOCAL CACHE' : 'LIVE'}
+            <div className="text-[9.5px] text-cyan-400 font-bold tracking-wider uppercase flex justify-between border-b border-[#3f3f46]/40 pb-1.5">
+              <span>1. THE MAP & STREAMS</span>
+              <div className="flex items-center gap-1.5">
+                {aircraftsStatus === 'offline' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>}
+                <span className={aircraftsStatus === 'offline' ? 'text-amber-500' : 'text-[#22c55e]'}>
+                  {aircraftsStatus === 'offline' ? 'CACHED' : 'ONLINE'}
                 </span>
               </div>
             </div>
 
             {aircrafts.length === 0 ? (
-              <div className="text-center text-slate-500 text-xs py-4">No planes detected in terminal slice.</div>
+              <div className="text-center text-slate-500 text-xs py-4">No planes detected in airspace.</div>
             ) : (
               <div className="space-y-2 flex-1 overflow-y-auto max-h-[22vh]">
-                {aircrafts.map((jet, idx) => (
+                {aircrafts.slice(0, 15).map((jet, idx) => (
                   <div
                     key={`jet-${idx}`}
                     onClick={() => setSelectedFeature({ ...jet, featureType: 'Aircraft' })}
-                    className="p-2 bg-[#12141a]/60 hover:bg-[#1a1d24] rounded border border-[#1a1d24] cursor-pointer transition text-[11px] flex justify-between items-center"
+                    className="p-2 bg-[#12141a]/60 hover:bg-[#1a1d24] rounded border border-[#3f3f46]/30 cursor-pointer transition text-[11px] flex justify-between items-center"
                   >
                     <div className="flex items-center gap-2">
-                      <Plane className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                      <Plane className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                       <div>
                         <div className="font-extrabold text-white">{jet.callsign}</div>
-                        <div className="text-[9.5px] text-slate-500">Alt: {jet.baro_altitude} m</div>
+                        <div className="text-[9.5px] text-slate-400">Alt: {jet.baro_altitude} m</div>
                       </div>
                     </div>
-                    <span className="text-purple-400 font-mono text-[10px]">{jet.true_track}° TRK</span>
+                    <span className="text-cyan-400 font-mono text-[10px]">{jet.true_track}° TRK</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Column 2: RSS News Geotag Ticker */}
+          {/* Column 2: THE WIRE (News Geotag Ticker) */}
           <div className="p-3 overflow-y-auto flex flex-col gap-2 h-full">
-            <div className="text-[9.5px] text-slate-400 font-bold font-mono tracking-wider uppercase flex justify-between border-b border-[#1a1d24] pb-1.5">
-              <span>2. NEWS GEOTAG TICKER</span>
-              <span className="text-emerald-400 font-bold">{rssArticles.length} ARTICLES</span>
+            <div className="text-[9.5px] text-cyan-400 font-bold font-mono tracking-wider uppercase flex justify-between border-b border-[#3f3f46]/40 pb-1.5">
+              <span>2. THE WIRE</span>
+              <span className="text-[#22c55e] font-bold">{rssArticles.length} ARTICLES</span>
             </div>
 
             {rssLoading ? (
               <div className="p-4 flex flex-col items-center justify-center gap-2 text-slate-500 font-mono text-xs">
-                <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
-                <span>Crawling Bangladesh breaking feeds...</span>
+                <RefreshCw className="w-4 h-4 animate-spin text-[#22c55e]" />
+                <span>Crawling Google News feed...</span>
               </div>
             ) : rssArticles.length === 0 ? (
               <div className="text-center text-slate-500 text-xs py-4 font-mono">No articles parsed currently.</div>
             ) : (
               <div className="space-y-2 flex-1 overflow-y-auto max-h-[22vh]">
-                {rssArticles.map((art, idx) => (
+                {rssArticles.slice(0, 15).map((art, idx) => (
                   <div
                     key={`rss-${idx}`}
                     onClick={() => setSelectedFeature({ ...art, featureType: 'RSSArticle' })}
-                    className="p-2 bg-[#12141a]/60 hover:bg-[#1a1d24] rounded border border-[#1a1d24] cursor-pointer transition text-[11px]"
+                    className="p-2 bg-[#12141a]/60 hover:bg-[#1a1d24] rounded border border-[#3f3f46]/30 cursor-pointer transition text-[11px]"
                   >
-                    <div className="font-bold text-slate-200 line-clamp-1 hover:text-[#00d084] transition leading-snug">
+                    <div className="font-bold text-slate-200 line-clamp-1 hover:text-cyan-400 transition leading-snug">
                       {art.title}
                     </div>
                     <div className="text-[9.5px] text-slate-500 mt-1 flex justify-between font-mono">
-                      <span className="text-emerald-400 font-bold">{art.source}</span>
-                      <span>{new Date(art.pubDate).toLocaleDateString()}</span>
+                      <span className="text-cyan-400 font-bold">{art.source}</span>
+                      <span>{new Date(art.pubDate).toLocaleTimeString()}</span>
                     </div>
                   </div>
                 ))}
@@ -489,84 +502,80 @@ export default function App() {
             )}
           </div>
 
-          {/* Column 3: Division Risk & Heat Stress Matrices */}
+          {/* Column 3: STOCKS (DSEX Dhaka Stock Exchange Matrix) */}
           <div className="p-3 overflow-y-auto flex flex-col gap-2 font-mono h-full">
-            <div className="text-[9.5px] text-slate-400 font-bold tracking-wider uppercase flex justify-between border-b border-[#1a1d24] pb-1.5">
-              <span>3. DIVISION RISK & METEO</span>
-              <span className="text-blue-400">MATH MATRIX</span>
-            </div>
-
-            {/* Division meteorology multi-coordinate weather panels from Open-Meteo */}
-            {divisionWeather && Object.keys(divisionWeather).length > 0 ? (
-              <div className="grid grid-cols-2 gap-2 flex-1 overflow-y-auto max-h-[22vh]">
-                {Object.entries(divisionWeather).map(([div, data]: any) => (
-                  <div key={div} className="bg-[#12141a]/60 p-2 rounded border border-[#1a1d24]">
-                    <div className="font-extrabold text-slate-400 truncate text-[10px]">{div.toUpperCase()}</div>
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-white text-xs font-bold">{data.temp}°C</span>
-                      <span className="text-slate-500 text-[9px]">{data.wind} km/h</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-slate-500 text-xs py-4">No division meteo metrics compiled.</div>
-            )}
-          </div>
-
-          {/* Column 4: Infrastructure & Threat Alerts Matrix */}
-          <div className="p-3 overflow-y-auto flex flex-col gap-2 font-mono h-full">
-            <div className="text-[9.5px] text-slate-400 font-bold tracking-wider uppercase flex justify-between border-b border-[#1a1d24] pb-1.5">
-              <span>4. INFRASTRUCTURE & SEISMICS</span>
-              <span className={dsexStatus === 'stale' ? 'text-amber-500' : 'text-emerald-400'}>
-                {dsexStatus === 'stale' ? 'STALE' : 'SECURE'}
+            <div className="text-[9.5px] text-cyan-400 font-bold tracking-wider uppercase flex justify-between border-b border-[#3f3f46]/40 pb-1.5">
+              <span>3. STOCKS INDEX</span>
+              <span className={dsexStatus === 'stale' ? 'text-amber-500 animate-pulse' : 'text-[#22c55e]'}>
+                {dsexStatus === 'stale' ? 'STALE' : 'LIVE'}
               </span>
             </div>
 
-            <div className="space-y-2 flex-1 overflow-y-auto max-h-[22vh]">
-              {/* Combine Critical compromised assets with active earthquake zones */}
-              <div className={`p-2 rounded border flex flex-col justify-between ${dsexStatus === 'stale' ? 'bg-yellow-500/10 border-yellow-500/20 text-amber-500' : 'bg-[#12141a]/60 border-[#1a1d24] text-slate-300'}`}>
-                <div className="flex justify-between font-bold text-[10px]">
-                  <span>DSEX STOCK MARKET:</span>
+            <div className="p-2.5 rounded border bg-[#12141a]/60 border-[#3f3f46]/30 text-slate-300">
+              <div className="font-bold text-slate-400 text-[10px] uppercase">DSEX MARKET INDEX</div>
+              <div className="text-white font-extrabold text-[15px] mt-1 flex justify-between items-baseline">
+                <span>{dsexValue.toFixed(2)}</span>
+                <span className={`text-xs font-bold ${dsexChange >= 0 ? 'text-[#22c55e]' : 'text-red-400'}`}>
+                  {dsexChange >= 0 ? '+' : ''}{dsexChange.toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {divisionWeather && Object.keys(divisionWeather).length > 0 && (
+              <div className="mt-1 p-2 bg-[#12141a]/40 border border-[#3f3f46]/20 rounded text-[9.5px]">
+                <div className="text-[8.5px] text-slate-500 font-bold mb-1 uppercase">DIVISIONS WEATHER</div>
+                <div className="grid grid-cols-2 gap-1 text-center">
+                  {Object.entries(divisionWeather).slice(0, 4).map(([div, data]: any) => (
+                    <div key={div} className="bg-[#12141a] p-1 rounded border border-[#3f3f46]/20 flex justify-between">
+                      <span className="text-slate-400 font-bold truncate">{div}</span>
+                      <span className="text-white font-bold">{data.temp}°C</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="text-white font-extrabold text-[12px] mt-1">
-                  {dsexValue.toFixed(2)} <span className={`text-[9px] ${dsexChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>({dsexChange >= 0 ? '+' : ''}{dsexChange.toFixed(2)})</span>
+              </div>
+            )}
+          </div>
+
+          {/* Column 4: Situational Risk Index Panel (3 Real-time Danger Dials) */}
+          <div className="p-3 overflow-y-auto flex flex-col gap-2 font-mono h-full">
+            <div className="text-[9.5px] text-cyan-400 font-bold tracking-wider uppercase flex justify-between border-b border-[#3f3f46]/40 pb-1.5">
+              <span>4. SITUATIONAL RISK PANEL</span>
+              <span className="text-red-400 font-bold">ALERT DIALS</span>
+            </div>
+
+            <div className="space-y-2.5 text-[10px] flex-1 overflow-y-auto max-h-[22vh]">
+              {/* Dial 1: Environmental Risk */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-slate-300">
+                  <span>ENVIRONMENTAL RISK:</span>
+                  <span className="text-cyan-400 font-bold">{riskAnalysis.breakdown.disaster}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-[#12141a] rounded-full overflow-hidden border border-[#3f3f46]/30">
+                  <div style={{ width: `${riskAnalysis.breakdown.disaster}%` }} className="h-full bg-cyan-400 transition-all duration-500"></div>
                 </div>
               </div>
 
-              {criticalAssets.map((asset) => (
-                <div
-                  key={asset.id}
-                  onClick={() => setSelectedFeature({ ...asset, featureType: 'Asset' })}
-                  className={`p-2 rounded border transition text-[11px] cursor-pointer flex justify-between items-center ${
-                    asset.status === 'damaged'
-                      ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                      : asset.status === 'alert'
-                      ? 'bg-yellow-500/10 border-yellow-500/20 text-amber-500'
-                      : 'bg-[#12141a]/60 border-[#1a1d24] text-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 overflow-hidden">
-                    <Database className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                    <span className="truncate font-bold">{asset.name}</span>
-                  </div>
-                  <span className="uppercase text-[9px] font-extrabold">{asset.status}</span>
+              {/* Dial 2: Infrastructure Status */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-slate-300">
+                  <span>INFRASTRUCTURE RISK:</span>
+                  <span className="text-[#f59e0b] font-bold">{riskAnalysis.breakdown.hydrology}%</span>
                 </div>
-              ))}
+                <div className="w-full h-1.5 bg-[#12141a] rounded-full overflow-hidden border border-[#3f3f46]/30">
+                  <div style={{ width: `${riskAnalysis.breakdown.hydrology}%` }} className="h-full bg-[#f59e0b] transition-all duration-500"></div>
+                </div>
+              </div>
 
-              {earthquakes.map((eq, i) => (
-                <div
-                  key={`eq-${i}`}
-                  onClick={() => setSelectedFeature({ ...eq, featureType: 'Earthquake' })}
-                  className="p-2 bg-[#12141a]/60 border-orange-500/30 rounded border text-[11px] cursor-pointer text-orange-400 flex justify-between items-center"
-                >
-                  <div className="flex items-center gap-1.5 overflow-hidden">
-                    <Waves className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-                    <span className="truncate font-bold">{eq.place}</span>
-                  </div>
-                  <span className="font-extrabold">{eq.magnitude}M</span>
+              {/* Dial 3: Public Event Activity */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-slate-300">
+                  <span>PUBLIC INCIDENT RISK:</span>
+                  <span className="text-red-400 font-bold">{riskAnalysis.breakdown.military}%</span>
                 </div>
-              ))}
+                <div className="w-full h-1.5 bg-[#12141a] rounded-full overflow-hidden border border-[#3f3f46]/30">
+                  <div style={{ width: `${riskAnalysis.breakdown.military}%` }} className="h-full bg-red-400 transition-all duration-500"></div>
+                </div>
+              </div>
             </div>
           </div>
 

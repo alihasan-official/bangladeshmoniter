@@ -9,7 +9,7 @@ body, html, #root {
   height: 100vh;
   overflow: hidden;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background-color: #0d0e12;
+  background-color: #09090b;
 }
 
 /* Custom Scrollbars */
