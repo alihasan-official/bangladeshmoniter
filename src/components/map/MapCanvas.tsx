@@ -26,6 +26,9 @@ export default function MapCanvas() {
     rssArticles,
     selectedFeature,
     setSelectedFeature,
+    aircrafts,
+    fires,
+    earthquakes,
   } = useStore();
 
   // Pulse animation state for meteorology radar / rain rings
@@ -286,6 +289,98 @@ export default function MapCanvas() {
           updateTriggers: {
             getLineColor: [selectedFeature],
           },
+        })
+      );
+    }
+
+    // 2.70 Aviation tracking layer (OpenSky Network aircraft)
+    if (layersVisibility.aviation && aircrafts && aircrafts.length > 0) {
+      deckLayers.push(
+        new ScatterplotLayer({
+          id: 'aviation-layer',
+          data: aircrafts,
+          pickable: true,
+          opacity: 0.9,
+          stroked: true,
+          filled: true,
+          radiusScale: 1,
+          radiusMinPixels: 8,
+          radiusMaxPixels: 20,
+          lineWidthMinPixels: 2,
+          getPosition: (d: any) => [d.longitude, d.latitude],
+          getRadius: 1000,
+          getFillColor: [147, 51, 234], // Purple for aircraft
+          getLineColor: (d: any) => {
+            if (selectedFeature?.callsign === d.callsign) return [255, 255, 255];
+            return [15, 20, 25];
+          },
+          onClick: (info: any) => {
+            if (info.object) {
+              setSelectedFeature({ ...info.object, featureType: 'Aircraft' });
+            }
+          },
+          updateTriggers: {
+            getLineColor: [selectedFeature],
+          },
+        })
+      );
+    }
+
+    // 2.72 NASA FIRMS Thermal / Industrial Fire Layer
+    if (layersVisibility.fires && fires && fires.length > 0) {
+      deckLayers.push(
+        new ScatterplotLayer({
+          id: 'fires-layer',
+          data: fires,
+          pickable: true,
+          opacity: 0.8,
+          stroked: true,
+          filled: true,
+          radiusScale: 1,
+          radiusMinPixels: 6,
+          radiusMaxPixels: 15,
+          lineWidthMinPixels: 1.5,
+          getPosition: (d: any) => [d.longitude, d.latitude],
+          getRadius: 1000,
+          getFillColor: [239, 68, 68], // Vibrant red for active heat points
+          getLineColor: (d: any) => {
+            if (selectedFeature?.id === d.id) return [255, 255, 255];
+            return [254, 240, 138];
+          },
+          onClick: (info: any) => {
+            if (info.object) {
+              setSelectedFeature({ ...info.object, featureType: 'ThermalPoint' });
+            }
+          },
+          updateTriggers: {
+            getLineColor: [selectedFeature],
+          },
+        })
+      );
+    }
+
+    // 2.74 USGS Earthquakes Seismic Activity Layer
+    if (layersVisibility.earthquakes && earthquakes && earthquakes.length > 0) {
+      deckLayers.push(
+        new ScatterplotLayer({
+          id: 'earthquakes-layer',
+          data: earthquakes,
+          pickable: true,
+          opacity: 0.75,
+          stroked: true,
+          filled: false,
+          radiusScale: 1,
+          radiusMinPixels: 10,
+          radiusMaxPixels: 40,
+          lineWidthMinPixels: 2.5,
+          getPosition: (d: any) => d.coordinates,
+          getRadius: (d: any) => d.magnitude * 5000,
+          getLineColor: [249, 115, 22], // Orange bounds
+          onClick: (info: any) => {
+            if (info.object) {
+              setSelectedFeature({ ...info.object, featureType: 'Earthquake' });
+            }
+          }
         })
       );
     }

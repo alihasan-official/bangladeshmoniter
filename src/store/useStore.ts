@@ -63,10 +63,13 @@ interface MonitorState {
     criticalAssets: boolean;
     shippingCorridors: boolean;
     waterways: boolean;
-    weather: boolean; // added weather layer
-    rssFeeds: boolean; // added rss feeds layer
+    weather: boolean;
+    rssFeeds: boolean;
+    aviation: boolean;
+    fires: boolean;
+    earthquakes: boolean;
   };
-  toggleLayer: (layerKey: 'incidents' | 'criticalAssets' | 'shippingCorridors' | 'waterways' | 'weather' | 'rssFeeds') => void;
+  toggleLayer: (layerKey: 'incidents' | 'criticalAssets' | 'shippingCorridors' | 'waterways' | 'weather' | 'rssFeeds' | 'aviation' | 'fires' | 'earthquakes') => void;
 
   // Active Telemetry/Operational Data
   incidents: DBIncident[];
@@ -116,6 +119,35 @@ interface MonitorState {
   // Map Mode (Day/Night)
   mapMode: 'dark' | 'light';
   setMapMode: (mode: 'dark' | 'light') => void;
+
+  // Aviation Feed state
+  aircrafts: any[];
+  aircraftsStatus: 'nominal' | 'offline';
+  setAircrafts: (aircrafts: any[]) => void;
+  setAircraftsStatus: (status: 'nominal' | 'offline') => void;
+
+  // Thermal/Industrial Fires state
+  fires: any[];
+  firesStatus: 'nominal' | 'offline';
+  setFires: (fires: any[]) => void;
+  setFiresStatus: (status: 'nominal' | 'offline') => void;
+
+  // Stock Index state
+  dsexValue: number;
+  dsexChange: number;
+  dsexStatus: 'nominal' | 'stale';
+  setDsexData: (value: number, change: number, status: 'nominal' | 'stale') => void;
+
+  // Seismic Activity state
+  earthquakes: any[];
+  earthquakesStatus: 'nominal' | 'offline';
+  setEarthquakes: (earthquakes: any[]) => void;
+  setEarthquakesStatus: (status: 'nominal' | 'offline') => void;
+
+  // Divisional Meteorology Matrices from Open-Meteo
+  divisionWeather: { [key: string]: { temp: number; wind: number; code: number } };
+  divisionWeatherStatus: 'nominal' | 'offline';
+  setDivisionWeather: (weather: { [key: string]: { temp: number; wind: number; code: number } }, status: 'nominal' | 'offline') => void;
 
   // Risk Score
   riskAnalysis: RiskAnalysis;
@@ -233,8 +265,11 @@ export const useStore = create<MonitorState>((set) => ({
     criticalAssets: true,
     shippingCorridors: true,
     waterways: true,
-    weather: true, // weather layer visible by default
-    rssFeeds: true, // rss feeds layer visible by default
+    weather: true,
+    rssFeeds: true,
+    aviation: true,
+    fires: true,
+    earthquakes: true,
   },
   toggleLayer: (layerKey) =>
     set((state) => ({
@@ -319,6 +354,31 @@ export const useStore = create<MonitorState>((set) => ({
   // Map Mode
   mapMode: 'dark',
   setMapMode: (mapMode) => set({ mapMode }),
+
+  // Live Async Dashboard Feeds
+  aircrafts: [],
+  aircraftsStatus: 'nominal',
+  setAircrafts: (aircrafts) => set({ aircrafts }),
+  setAircraftsStatus: (aircraftsStatus) => set({ aircraftsStatus }),
+
+  fires: [],
+  firesStatus: 'nominal',
+  setFires: (fires) => set({ fires }),
+  setFiresStatus: (firesStatus) => set({ firesStatus }),
+
+  dsexValue: 5642.15,
+  dsexChange: -12.45,
+  dsexStatus: 'nominal',
+  setDsexData: (dsexValue, dsexChange, dsexStatus) => set({ dsexValue, dsexChange, dsexStatus }),
+
+  earthquakes: [],
+  earthquakesStatus: 'nominal',
+  setEarthquakes: (earthquakes) => set({ earthquakes }),
+  setEarthquakesStatus: (earthquakesStatus) => set({ earthquakesStatus }),
+
+  divisionWeather: {},
+  divisionWeatherStatus: 'nominal',
+  setDivisionWeather: (divisionWeather, divisionWeatherStatus) => set({ divisionWeather, divisionWeatherStatus }),
 
   // Subcontinental Risk Matrix
   riskAnalysis: {

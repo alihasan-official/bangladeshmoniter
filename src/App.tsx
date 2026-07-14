@@ -82,6 +82,23 @@ export default function App() {
   const [dhakaTime, setDhakaTime] = useState('');
   const [, startTransition] = useTransition();
 
+  const {
+    aircrafts,
+    aircraftsStatus,
+    fires,
+    firesStatus,
+    dsexValue,
+    dsexChange,
+    dsexStatus,
+    earthquakes,
+    earthquakesStatus,
+    divisionWeather,
+    divisionWeatherStatus
+  } = useStore();
+
+  // Use divisionWeatherStatus if needed to suppress typescript warnings
+  const weatherStatusLabel = divisionWeatherStatus === 'offline' ? 'OFFLINE' : 'ONLINE';
+
   // 1. Load Seed Data from IndexedDB into Zustand Store on startup
   useEffect(() => {
     async function loadData() {
@@ -106,10 +123,23 @@ export default function App() {
     }
   };
 
+  // 1.6 Poll Async Dashboard High-Density Streams (Every 30 seconds)
+  const pollAsyncFeeds = async () => {
+    const { pollDashboardPipelines } = await import('./services/dashboardPoll');
+    await pollDashboardPipelines();
+  };
+
   useEffect(() => {
     loadRssNews();
-    const interval = setInterval(loadRssNews, 180000); // refresh RSS feeds every 3 mins
-    return () => clearInterval(interval);
+    const intervalRss = setInterval(loadRssNews, 180000); // refresh RSS feeds every 3 mins
+
+    pollAsyncFeeds();
+    const intervalPoll = setInterval(pollAsyncFeeds, 30000); // Poll API pipelines every 30s
+
+    return () => {
+      clearInterval(intervalRss);
+      clearInterval(intervalPoll);
+    };
   }, []);
 
   // 2. Continuous time ticking in Dhaka Standard Time (GMT+6)
@@ -611,6 +641,67 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
                 INTEL
               </button>
             </div>
+
+            {/* Dashboard Real-Time Feeds Summary Widgets (Aviation, Stock, Tectonic, Heat) */}
+            <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-[#1a1d24] text-[10px] font-mono">
+              <div className={`p-2 rounded border flex flex-col justify-between ${aircraftsStatus === 'offline' ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-[#0d0e12] border-[#1a1d24]'}`}>
+                <div className="flex justify-between font-bold">
+                  <span>AIRSPACE STATUS:</span>
+                  <span className={aircraftsStatus === 'offline' ? 'text-red-500' : 'text-purple-400'}>{aircraftsStatus === 'offline' ? 'OFFLINE' : 'ONLINE'}</span>
+                </div>
+                <div className="text-white font-extrabold text-[12px] mt-1">
+                  {aircraftsStatus === 'offline' ? 'FEED SUSPENDED' : `${aircrafts.length} CONCURRENT JETS`}
+                </div>
+              </div>
+
+              <div className={`p-2 rounded border flex flex-col justify-between ${dsexStatus === 'stale' ? 'bg-yellow-500/10 border-yellow-500/30 text-amber-400' : 'bg-[#0d0e12] border-[#1a1d24]'}`}>
+                <div className="flex justify-between font-bold">
+                  <span>DSEX STOCK:</span>
+                  <span className={dsexStatus === 'stale' ? 'text-amber-500' : 'text-emerald-400'}>{dsexStatus === 'stale' ? 'CACHED' : 'LIVE'}</span>
+                </div>
+                <div className="text-white font-extrabold text-[12px] mt-1">
+                  {dsexValue.toFixed(2)} <span className={`text-[9px] ${dsexChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>({dsexChange >= 0 ? '+' : ''}{dsexChange.toFixed(2)})</span>
+                </div>
+              </div>
+
+              <div className={`p-2 rounded border flex flex-col justify-between ${firesStatus === 'offline' ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-[#0d0e12] border-[#1a1d24]'}`}>
+                <div className="flex justify-between font-bold">
+                  <span>THERMAL SATS:</span>
+                  <span className={firesStatus === 'offline' ? 'text-red-500' : 'text-red-400'}>{firesStatus === 'offline' ? 'OFFLINE' : 'ONLINE'}</span>
+                </div>
+                <div className="text-white font-extrabold text-[12px] mt-1">
+                  {firesStatus === 'offline' ? 'UNREACHABLE' : `${fires.length} ACTIVE HOTSPOTS`}
+                </div>
+              </div>
+
+              <div className={`p-2 rounded border flex flex-col justify-between ${earthquakesStatus === 'offline' ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-[#0d0e12] border-[#1a1d24]'}`}>
+                <div className="flex justify-between font-bold">
+                  <span>SEISMIC GRIDS:</span>
+                  <span className={earthquakesStatus === 'offline' ? 'text-red-500' : 'text-orange-400'}>{earthquakesStatus === 'offline' ? 'OFFLINE' : 'ONLINE'}</span>
+                </div>
+                <div className="text-white font-extrabold text-[12px] mt-1">
+                  {earthquakesStatus === 'offline' ? 'STANDBY' : `${earthquakes.length} >3.0 MAG QUAKES`}
+                </div>
+              </div>
+            </div>
+
+            {/* Division meteorology multi-coordinate weather panels from Open-Meteo */}
+            {divisionWeather && Object.keys(divisionWeather).length > 0 && (
+              <div className="mt-2 p-2 bg-[#0d0e12] border border-[#1a1d24] rounded text-[10px] font-mono">
+                <div className="text-[9px] text-slate-400 font-bold mb-1 uppercase flex justify-between">
+                  <span>DIVISIONS METEO (OPEN-METEO)</span>
+                  <span className="text-emerald-400">{weatherStatusLabel}</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5 text-center">
+                  {Object.entries(divisionWeather).slice(0, 4).map(([div, data]: any) => (
+                    <div key={div} className="bg-[#12141a] p-1 rounded border border-[#1a1d24]">
+                      <div className="font-bold text-slate-400 truncate">{div.toUpperCase()}</div>
+                      <div className="text-white font-bold text-[11px] mt-0.5">{data.temp}°C</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Scrolling List Panel */}
@@ -1137,6 +1228,57 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
                     <div className="text-slate-200 mt-1 leading-relaxed text-[11px] font-bold">
                       {selectedFeature.title}
                     </div>
+                  </div>
+                </>
+              )}
+
+              {selectedFeature.featureType === 'Aircraft' && (
+                <>
+                  <div className="flex justify-between">
+                    <span>CALLSIGN:</span>
+                    <span className="text-purple-400 font-bold">{selectedFeature.callsign}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>ALTITUDE:</span>
+                    <span className="text-slate-200">{selectedFeature.baro_altitude} m</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>TRUE TRACK:</span>
+                    <span className="text-slate-200">{selectedFeature.true_track}°</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>ON GROUND:</span>
+                    <span className="text-slate-200">{selectedFeature.on_ground ? 'YES' : 'NO'}</span>
+                  </div>
+                </>
+              )}
+
+              {selectedFeature.featureType === 'ThermalPoint' && (
+                <>
+                  <div className="flex justify-between">
+                    <span>THERMAL FOCUS:</span>
+                    <span className="text-red-500 font-bold">ACTIVE ANOMALY</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>BRIGHTNESS T31:</span>
+                    <span className="text-slate-200">{selectedFeature.bright_t31} K</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>SCAN RATE:</span>
+                    <span className="text-slate-200">{selectedFeature.scan}</span>
+                  </div>
+                </>
+              )}
+
+              {selectedFeature.featureType === 'Earthquake' && (
+                <>
+                  <div className="flex justify-between">
+                    <span>MAGNITUDE:</span>
+                    <span className="text-orange-500 font-bold">{selectedFeature.magnitude} Richter</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>LOCATION FOCUS:</span>
+                    <span className="text-slate-200">{selectedFeature.place}</span>
                   </div>
                 </>
               )}
