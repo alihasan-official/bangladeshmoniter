@@ -334,7 +334,8 @@ function cleanDescription(html: string): string {
  */
 async function fetchFeed(portal: typeof PORTALS[0], portalIndex: number): Promise<RSSArticle[]> {
   const encodedUrl = encodeURIComponent(portal.url);
-  const bypassUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodedUrl}`;
+  // Use a reliable free CORS bypass proxy client to avoid original domain origin isolation errors
+  const bypassUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.rss2json.com/v1/api.json?rss_url=${encodedUrl}`)}`;
 
   const response = await fetch(bypassUrl);
   if (!response.ok) {

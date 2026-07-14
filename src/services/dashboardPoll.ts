@@ -54,10 +54,12 @@ export const ResponseValidator = {
     return data.features.map((f: any) => ({
       id: f.id,
       coordinates: f.geometry?.coordinates?.slice(0, 2),
+      longitude: f.geometry?.coordinates?.[0],
+      latitude: f.geometry?.coordinates?.[1],
       magnitude: f.properties?.mag,
       place: f.properties?.place || 'Tectonic Delta Hinge',
       time: f.properties?.time
-    })).filter((eq: any) => eq.coordinates && eq.coordinates.length === 2 && eq.magnitude > 3.0);
+    })).filter((eq: any) => eq.coordinates && eq.coordinates.length === 2 && eq.magnitude > 1.0);
   }
 };
 
@@ -75,28 +77,59 @@ export async function pollDashboardPipelines() {
       const valid = ResponseValidator.validateAviation(data);
       store.setAircrafts(valid);
       store.setAircraftsStatus('nominal');
+      // Update local storage cache
+      try {
+        localStorage.setItem('bd_flights_cache', JSON.stringify(valid));
+      } catch (err) {}
     } else {
-      store.setAircraftsStatus('offline');
+      // Load last cached state from localStorage to prevent "Suspended" triggers
+      const cached = localStorage.getItem('bd_flights_cache');
+      if (cached) {
+        store.setAircrafts(JSON.parse(cached));
+        store.setAircraftsStatus('offline'); // marked amber but operational
+      } else {
+        store.setAircraftsStatus('offline');
+      }
     }
   } catch (e) {
-    console.warn('[OPENSKY] Rate limit / connection error, fallback offline state engaged');
+    console.warn('[OPENSKY] Rate limit / connection error, fallback cached state engaged');
+    const cached = localStorage.getItem('bd_flights_cache');
+    if (cached) {
+      try {
+        store.setAircrafts(JSON.parse(cached));
+      } catch (err) {}
+    }
     store.setAircraftsStatus('offline');
   }
 
-  // 2. Thermal Hazard / FIRMS (Using active MODIS / VIIRS area fallback feed or test sandbox tokens)
+  // 2. Thermal Hazard / FIRMS
   try {
-    // Free public MODIS point tracker via standardized NASA Earthdata feeds (or fallback area parsing)
     const res = await fetch('https://firms.modaps.eosdis.nasa.gov/api/area/csv/6f4142db6ca8df8750800b6f937d12db/MODIS_SPH/88.0,20.3,92.7,26.6/1', { signal: AbortSignal.timeout(6000) });
     if (res.ok) {
       const csv = await res.text();
       const points = ResponseValidator.validateFires(csv);
       store.setFires(points);
       store.setFiresStatus('nominal');
+      try {
+        localStorage.setItem('bd_fires_cache', JSON.stringify(points));
+      } catch (err) {}
     } else {
-      store.setFiresStatus('offline');
+      const cached = localStorage.getItem('bd_fires_cache');
+      if (cached) {
+        store.setFires(JSON.parse(cached));
+        store.setFiresStatus('offline');
+      } else {
+        store.setFiresStatus('offline');
+      }
     }
   } catch (e) {
-    console.warn('[FIRMS] Thermal sats unreachable. Falling back to offline marker indicators');
+    console.warn('[FIRMS] Thermal stats unreachable. Loading local storage fires cache if present.');
+    const cached = localStorage.getItem('bd_fires_cache');
+    if (cached) {
+      try {
+        store.setFires(JSON.parse(cached));
+      } catch (err) {}
+    }
     store.setFiresStatus('offline');
   }
 

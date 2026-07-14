@@ -3,47 +3,7 @@
 > vite
 
 
-  VITE v5.4.21  ready in 245 ms
+  VITE v5.4.21  ready in 606 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: http://192.168.0.2:3000/
-8:07:41 PM [vite] hmr update /src/App.tsx, /src/index.css
-8:07:41 PM [vite] hmr update /src/App.tsx, /src/index.css
-8:30:28 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/map/MapCanvas.tsx
-8:32:07 PM [vite] hmr update /src/App.tsx, /src/index.css
-8:33:21 PM [vite] hmr update /src/components/map/MapCanvas.tsx, /src/index.css
-8:34:04 PM [vite] hmr update /src/App.tsx, /src/index.css
-8:34:20 PM [vite] hmr update /src/App.tsx, /src/index.css
-9:03:09 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/map/MapCanvas.tsx
-9:03:37 PM [vite] hmr update /src/components/map/MapCanvas.tsx, /src/index.css
-9:03:43 PM [vite] hmr update /src/components/map/MapCanvas.tsx, /src/index.css
-9:03:59 PM [vite] hmr update /src/components/map/MapCanvas.tsx, /src/index.css
-9:04:08 PM [vite] hmr update /src/App.tsx, /src/index.css
-9:06:14 PM [vite] hmr update /src/App.tsx, /src/index.css
-9:06:39 PM [vite] hmr update /src/App.tsx, /src/index.css
-9:25:27 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/map/MapCanvas.tsx
-9:25:31 PM [vite] hmr update /src/App.tsx, /src/index.css
-9:25:51 PM [vite] hmr update /src/App.tsx, /src/index.css
-9:26:12 PM [vite] hmr update /src/App.tsx, /src/index.css
-9:27:27 PM [vite] hmr update /src/App.tsx, /src/index.css
-9:27:37 PM [vite] hmr update /src/App.tsx, /src/index.css
-9:50:07 PM [vite] hmr update /src/App.tsx, /src/index.css
-9:50:33 PM [vite] hmr update /src/App.tsx, /src/index.css
-9:51:13 PM [vite] hmr update /src/App.tsx, /src/index.css
-10:01:38 PM [vite] hmr update /src/App.tsx, /src/index.css
-10:02:19 PM [vite] hmr update /src/App.tsx, /src/index.css
-10:03:09 PM [vite] hmr update /src/App.tsx, /src/index.css
-10:03:32 PM [vite] hmr update /src/App.tsx, /src/index.css
-4:32:53 AM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/map/MapCanvas.tsx
-4:32:58 AM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/map/MapCanvas.tsx
-4:33:07 AM [vite] hmr update /src/components/map/MapCanvas.tsx, /src/index.css
-4:35:41 AM [vite] hmr update /src/App.tsx, /src/index.css
-4:36:00 AM [vite] hmr update /src/App.tsx, /src/index.css
-4:36:10 AM [vite] hmr update /src/App.tsx, /src/index.css
-4:37:03 AM [vite] hmr update /src/App.tsx, /src/index.css
-4:37:09 AM [vite] hmr update /src/App.tsx, /src/index.css
-4:51:50 AM [vite] hmr update /src/App.tsx, /src/index.css
-4:52:17 AM [vite] hmr update /src/App.tsx, /src/index.css
-4:53:00 AM [vite] hmr update /src/index.css
-4:53:18 AM [vite] hmr update /src/App.tsx, /src/index.css
-4:53:22 AM [vite] hmr update /src/App.tsx, /src/index.css
