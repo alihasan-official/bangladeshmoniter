@@ -152,14 +152,15 @@ export async function seedTacticalDatabase(): Promise<{
   const assetCount = await db.criticalAssets.count();
   const newsCount = await db.operationalNews.count();
 
+  // Use safe IndexedDB bulkPut() calls to prevent BulkError during startup
   if (incidentCount === 0) {
-    await db.incidents.bulkAdd(seedIncidents);
+    await db.incidents.bulkPut(seedIncidents);
   }
   if (assetCount === 0) {
-    await db.criticalAssets.bulkAdd(seedAssets);
+    await db.criticalAssets.bulkPut(seedAssets);
   }
   if (newsCount === 0) {
-    await db.operationalNews.bulkAdd(seedNews);
+    await db.operationalNews.bulkPut(seedNews);
   }
 
   // Retrieve full datasets from IndexedDB

@@ -9,61 +9,145 @@ body, html, #root {
   height: 100vh;
   overflow: hidden;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background-color: #0d0e12;
+  background-color: #09090b;
 }
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #0d0e12;
+  background: #09090b;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1a1d24;
+  background: #27272a;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #ff3b30;
+  background: #10b981;
 }
 
 /* Premium Cinematic Glass Panels */
 .glass-panel {
-  background: rgba(18, 20, 26, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(26, 29, 36, 0.85);
+  background: rgba(9, 9, 11, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(39, 39, 42, 0.7);
 }
 
 .glow-emerald {
-  box-shadow: 0 0 15px rgba(0, 106, 78, 0.4);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
 }
 
 .glow-crimson {
-  box-shadow: 0 0 15px rgba(255, 59, 48, 0.4);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
 }
 
 .glow-yellow {
-  box-shadow: 0 0 15px rgba(245, 180, 0, 0.4);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.35);
 }
 
 /* Seamless pulse loops for cinematic radar effect */
 @keyframes pulse-ring {
   0% {
     transform: scale(0.95);
-    opacity: 0.8;
+    opacity: 0.85;
   }
   50% {
-    transform: scale(1.1);
+    transform: scale(1.12);
     opacity: 0.4;
   }
   100% {
     transform: scale(0.95);
-    opacity: 0.8;
+    opacity: 0.85;
   }
 }
 
 .radar-pulse {
-  animation: pulse-ring 2.5s infinite ease-in-out;
+  animation: pulse-ring 3s infinite ease-in-out;
+}
+
+/* Bottom Console Swipe Transitions */
+.smooth-sidebar-transition {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+
+/* News Ticker Marquee Loop */
+@keyframes marquee {
+  0% {
+    transform: translateX(10%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 45s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Rotating Radar Sweep Indicator */
+@keyframes radar-sweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.radar-sweep-indicator {
+  animation: radar-sweep 8s linear infinite;
+}
+
+/* Glowing Coordinate Alerts */
+@keyframes glow-coordinate {
+  0%, 100% {
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 4px rgba(16, 185, 129, 0.2);
+  }
+  50% {
+    border-color: rgba(16, 185, 129, 0.8);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+  }
+}
+
+.glow-coordinate-alert {
+  animation: glow-coordinate 2s infinite ease-in-out;
+}
+
+/* Day vs Night Global Styling Adapters */
+.day-mode-contrast .glass-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(228, 228, 231, 0.9);
+  color: #18181b;
+}
+
+.day-mode-contrast .text-slate-100,
+.day-mode-contrast .text-slate-200,
+.day-mode-contrast .text-slate-300,
+.day-mode-contrast .text-zinc-200 {
+  color: #09090b !important;
+}
+
+.day-mode-contrast .text-slate-400,
+.day-mode-contrast .text-slate-500,
+.day-mode-contrast .text-zinc-400 {
+  color: #3f3f46 !important;
+}
+
+.day-mode-contrast .bg-zinc-950,
+.day-mode-contrast .bg-brand-dark,
+.day-mode-contrast .bg-brand-panel {
+  background-color: #f4f4f5 !important;
+}
+
+.day-mode-contrast .border-brand-border,
+.day-mode-contrast .border-zinc-800 {
+  border-color: #d4d4d8 !important;
 }

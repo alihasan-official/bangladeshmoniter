@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useState } from 'react';
 import DeckGL from '@deck.gl/react';
 import { ScatterplotLayer, LineLayer } from '@deck.gl/layers';
 import { Map } from 'react-map-gl/maplibre';
@@ -6,6 +6,7 @@ import maplibregl from 'maplibre-gl';
 import useStore from '../../store/useStore';
 import { DBCriticalAsset } from '../../services/db';
 import { HighPerformanceClusterer } from '../../utils/spatial';
+import { Layers, Maximize2, Minimize2, Navigation, Compass } from 'lucide-react';
 
 // Boundaries for Bangladesh regional clamping
 const BBOX_LIMITS = {
@@ -20,13 +21,21 @@ export default function MapCanvas() {
     viewState,
     setViewState,
     layersVisibility,
+    toggleLayer,
     incidents,
     criticalAssets,
+    flights,
+    maritimeVessels,
     selectedFeature,
     setSelectedFeature,
+    mapMode,
+    setMapMode,
   } = useStore();
 
-  // Create high-performance Supercluster instance
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showLayerMenu, setShowLayerMenu] = useState(false);
+
+  // High-performance Supercluster instance
   const clusterer = useMemo(() => new HighPerformanceClusterer(), []);
 
   // Sync active incidents with Supercluster
@@ -56,14 +65,27 @@ export default function MapCanvas() {
     });
   }, [setViewState]);
 
-  // Free CartoDB Dark Matter style JSON for matte charcoal visual aesthetics
-  const mapStyle = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+  // Swappable CartoDB map style depending on mapMode setting
+  const mapStyle = useMemo(() => {
+    return mapMode === 'dark'
+      ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+      : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+  }, [mapMode]);
+
+  // Toggle fullscreen mode
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true));
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
 
   // Compute active cluster nodes and raw points to feed Deck.gl
   const visibleIncidentData = useMemo(() => {
     if (!layersVisibility.incidents) return [];
 
-    // Construct a bounding box from current viewState (or approximation for supercluster)
     const range = 180 / Math.pow(2, viewState.zoom - 1);
     const west = Math.max(BBOX_LIMITS.minLng, viewState.longitude - range);
     const east = Math.min(BBOX_LIMITS.maxLng, viewState.longitude + range);
@@ -73,7 +95,7 @@ export default function MapCanvas() {
     return clusterer.getIncidentsInView(west, south, east, north, viewState.zoom);
   }, [viewState, incidents, layersVisibility.incidents, clusterer]);
 
-  // Define shipping corridors across the Bay of Bengal sea lanes
+  // Shipping corridors across the Bay of Bengal sea lanes
   const shippingCorridorsData = useMemo(() => {
     return [
       { id: 'c1', name: 'BoB Sea Route Alpha', from: [88.5, 10.0], to: [91.2, 21.0] },
@@ -83,7 +105,7 @@ export default function MapCanvas() {
     ];
   }, []);
 
-  // Define transboundary delta river lines for flood tracking layers
+  // Transboundary delta river lines for flood tracking layers
   const waterwayLinesData = useMemo(() => {
     return [
       { id: 'w1', name: 'Brahmaputra Channel', from: [89.7, 25.8], to: [89.8, 23.8] },
@@ -97,7 +119,7 @@ export default function MapCanvas() {
   const layers = useMemo(() => {
     const deckLayers = [];
 
-    // 1. Waterways flow vectors layer (Bright Blue)
+    // 1. Waterways flow vectors layer (Blue/Cyan lines)
     if (layersVisibility.waterways) {
       deckLayers.push(
         new LineLayer({
@@ -107,12 +129,12 @@ export default function MapCanvas() {
           getWidth: 4,
           getSourcePosition: (d: any) => d.from,
           getTargetPosition: (d: any) => d.to,
-          getColor: [30, 144, 255, 180],
+          getColor: mapMode === 'dark' ? [34, 211, 238, 180] : [2, 132, 199, 180],
         })
       );
     }
 
-    // 2. Shipping channels layer (Amber/orange corridors in BoB)
+    // 2. Shipping channels layer (Amber corridors)
     if (layersVisibility.shippingCorridors) {
       deckLayers.push(
         new LineLayer({
@@ -122,12 +144,88 @@ export default function MapCanvas() {
           getWidth: 3,
           getSourcePosition: (d: any) => d.from,
           getTargetPosition: (d: any) => d.to,
-          getColor: [220, 140, 30, 150],
+          getColor: [245, 158, 11, 150],
         })
       );
     }
 
-    // 3. Critical Assets layer
+    // 3. Live Maritime Vessels Layer (Orange)
+    if (layersVisibility.shippingCorridors) {
+      deckLayers.push(
+        new ScatterplotLayer({
+          id: 'vessels-layer',
+          data: maritimeVessels,
+          pickable: true,
+          opacity: 0.9,
+          stroked: true,
+          filled: true,
+          radiusScale: 1,
+          radiusMinPixels: 5,
+          radiusMaxPixels: 12,
+          lineWidthMinPixels: 1,
+          getPosition: (d: any) => [d.lng, d.lat],
+          getRadius: 800,
+          getFillColor: [245, 158, 11],
+          getLineColor: [15, 23, 42],
+          onClick: (info: any) => {
+            if (info.object) {
+              setSelectedFeature({ ...info.object, featureType: 'Maritime Vessel' });
+            }
+          },
+        })
+      );
+    }
+
+    // 4. Live Flight Telemetry Layer (Purple/Cyan dots with pulsing look)
+    if (layersVisibility.windVectors) {
+      deckLayers.push(
+        new ScatterplotLayer({
+          id: 'flights-layer',
+          data: flights,
+          pickable: true,
+          opacity: 0.95,
+          stroked: true,
+          filled: true,
+          radiusScale: 1,
+          radiusMinPixels: 6,
+          radiusMaxPixels: 14,
+          lineWidthMinPixels: 1.5,
+          getPosition: (d: any) => [d.lng, d.lat],
+          getRadius: 1000,
+          getFillColor: [168, 85, 247],
+          getLineColor: [255, 255, 255],
+          onClick: (info: any) => {
+            if (info.object) {
+              setSelectedFeature({ ...info.object, featureType: 'Aviation Track' });
+            }
+          },
+        })
+      );
+    }
+
+    // 5. Simulated Animated Meteorological Rain Radar Rings (Emerald/Cyan concentric rings)
+    if (layersVisibility.weatherRadar) {
+      const radarCenters = [
+        { id: 'rad-1', name: 'Dhaka Command Radar', lat: 23.8103, lng: 90.4125, r: 40000 },
+        { id: 'rad-2', name: 'Cox\'s Bazar Meteorological Station', lat: 21.4272, lng: 92.0058, r: 60000 },
+      ];
+      deckLayers.push(
+        new ScatterplotLayer({
+          id: 'weather-radar-layer',
+          data: radarCenters,
+          pickable: false,
+          opacity: 0.15,
+          stroked: true,
+          filled: false,
+          lineWidthMinPixels: 2,
+          getPosition: (d: any) => [d.lng, d.lat],
+          getRadius: (d: any) => d.r,
+          getLineColor: [16, 185, 129],
+        })
+      );
+    }
+
+    // 6. Critical Assets layer (Green/Yellow/Red status rings)
     if (layersVisibility.criticalAssets) {
       deckLayers.push(
         new ScatterplotLayer({
@@ -144,13 +242,13 @@ export default function MapCanvas() {
           getPosition: (d: DBCriticalAsset) => [d.lng, d.lat],
           getRadius: 1000,
           getFillColor: (d: DBCriticalAsset) => {
-            if (d.status === 'damaged') return [255, 59, 48]; // Crimson Alert
-            if (d.status === 'alert') return [245, 180, 0]; // Warning Yellow
-            return [0, 208, 132]; // Emerald Nominal
+            if (d.status === 'damaged') return [239, 68, 68]; // Red
+            if (d.status === 'alert') return [245, 158, 11]; // Yellow
+            return [16, 185, 129]; // Green
           },
           getLineColor: (d: DBCriticalAsset) => {
             if (selectedFeature?.id === d.id) return [255, 255, 255];
-            return [15, 20, 25];
+            return [15, 23, 42];
           },
           onClick: (info: any) => {
             if (info.object) {
@@ -164,7 +262,7 @@ export default function MapCanvas() {
       );
     }
 
-    // 4. Incidents & Clusters Layer
+    // 7. Incidents & Clusters Layer
     if (layersVisibility.incidents) {
       deckLayers.push(
         new ScatterplotLayer({
@@ -179,8 +277,8 @@ export default function MapCanvas() {
           radiusMaxPixels: 30,
           lineWidthMinPixels: 1.5,
           getPosition: (d: any) => {
-            if (d.geometry) return d.geometry.coordinates; // cluster
-            return [d.lng, d.lat]; // normal incident
+            if (d.geometry) return d.geometry.coordinates;
+            return [d.lng, d.lat];
           },
           getRadius: (d: any) => {
             if (d.properties?.cluster) return 2000;
@@ -189,25 +287,22 @@ export default function MapCanvas() {
           getFillColor: (d: any) => {
             if (d.properties?.cluster) {
               const pointCount = d.properties.point_count;
-              if (pointCount > 5) return [255, 59, 48, 210]; // Large red cluster
-              return [245, 180, 0, 210]; // Medium amber cluster
+              if (pointCount > 5) return [239, 68, 68, 210];
+              return [245, 158, 11, 210];
             }
-            // Individual node
-            if (d.severity === 'critical') return [255, 59, 48];
-            if (d.severity === 'warning') return [245, 180, 0];
-            return [0, 106, 78]; // nominal emerald
+            if (d.severity === 'critical') return [239, 68, 68];
+            if (d.severity === 'warning') return [245, 158, 11];
+            return [16, 185, 129];
           },
           getLineColor: (d: any) => {
             const id = d.properties?.cluster ? `cluster-${d.id}` : d.id;
             if (selectedFeature?.id === id) return [255, 255, 255];
-            return [10, 12, 16];
+            return [15, 23, 42];
           },
           onClick: (info: any) => {
             if (info.object) {
               const obj = info.object;
               if (obj.properties?.cluster) {
-                // Zoom in on cluster click
-                clusterer.getClusterLeaves(obj.id);
                 const [lng, lat] = obj.geometry.coordinates;
                 setViewState({
                   ...viewState,
@@ -232,13 +327,15 @@ export default function MapCanvas() {
     layersVisibility,
     visibleIncidentData,
     criticalAssets,
+    flights,
+    maritimeVessels,
     selectedFeature,
     setSelectedFeature,
     waterwayLinesData,
     shippingCorridorsData,
-    clusterer,
     setViewState,
     viewState,
+    mapMode,
   ]);
 
   return (
@@ -267,27 +364,120 @@ export default function MapCanvas() {
         />
       </DeckGL>
 
-      {/* Real-time coordinates clamp HUD panel */}
+      {/* Floating Tactical Layer Swapper and Map Controls HUD Panel */}
       <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
-        <div className="glass-panel px-3 py-2.5 text-xs flex flex-col gap-1 rounded-md shadow-2xl text-slate-400 font-mono border border-brand-border">
+
+        {/* Layer Swapper Button */}
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => setMapMode(mapMode === 'dark' ? 'light' : 'dark')}
+            className="p-2.5 rounded-lg border text-xs font-mono font-bold transition shadow-md bg-zinc-900 border-zinc-800 text-zinc-100 hover:bg-zinc-800 hover:text-white"
+            title="Toggle Map Light/Dark Mode"
+          >
+            {mapMode === 'dark' ? 'DAY MODE' : 'NIGHT MODE'}
+          </button>
+
+          <button
+            onClick={toggleFullscreen}
+            className="p-2.5 rounded-lg border transition shadow-md bg-zinc-900 border-zinc-800 text-zinc-100 hover:bg-zinc-800 hover:text-white"
+            title="Fullscreen Toggle"
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+
+          <button
+            onClick={() => setShowLayerMenu(!showLayerMenu)}
+            className={`p-2.5 rounded-lg border transition shadow-md flex items-center gap-1.5 text-xs font-mono font-bold ${
+              showLayerMenu ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-zinc-900 border-zinc-800 text-zinc-100 hover:bg-zinc-800'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>LAYERS</span>
+          </button>
+        </div>
+
+        {/* Floating Layer Menu Overlay */}
+        {showLayerMenu && (
+          <div className="p-3 bg-zinc-950/95 border border-zinc-800 rounded-lg shadow-2xl flex flex-col gap-2 w-52 text-xs font-mono text-zinc-200">
+            <span className="text-[10px] text-zinc-500 font-bold border-b border-zinc-800 pb-1.5 mb-1 flex items-center gap-1">
+              <Navigation className="w-3.5 h-3.5 text-emerald-400" />
+              INTELLIGENCE REGISTRY
+            </span>
+
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+              <input
+                type="checkbox"
+                checked={layersVisibility.incidents}
+                onChange={() => toggleLayer('incidents')}
+                className="accent-emerald-500"
+              />
+              <span>OSINT Incidents</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+              <input
+                type="checkbox"
+                checked={layersVisibility.criticalAssets}
+                onChange={() => toggleLayer('criticalAssets')}
+                className="accent-emerald-500"
+              />
+              <span>Critical Infrastructure</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+              <input
+                type="checkbox"
+                checked={layersVisibility.shippingCorridors}
+                onChange={() => toggleLayer('shippingCorridors')}
+                className="accent-emerald-500"
+              />
+              <span>Shipping Sea Lanes</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+              <input
+                type="checkbox"
+                checked={layersVisibility.waterways}
+                onChange={() => toggleLayer('waterways')}
+                className="accent-emerald-500"
+              />
+              <span>Transboundary Rivers</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+              <input
+                type="checkbox"
+                checked={layersVisibility.weatherRadar}
+                onChange={() => toggleLayer('weatherRadar')}
+                className="accent-emerald-500"
+              />
+              <span>Pulsing Weather Radar</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+              <input
+                type="checkbox"
+                checked={layersVisibility.windVectors}
+                onChange={() => toggleLayer('windVectors')}
+                className="accent-emerald-500"
+              />
+              <span>Live Aviation Tracking</span>
+            </label>
+          </div>
+        )}
+
+        {/* Real-time coordinates clamp HUD panel */}
+        <div className="glass-panel px-3 py-2.5 text-xs flex flex-col gap-1 rounded-lg shadow-2xl text-slate-400 font-mono border border-brand-border">
           <div className="text-slate-300 font-bold border-b border-[#1a1d24] pb-1.5 mb-1.5 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#006a4e] animate-pulse"></span>
+            <Compass className="w-4 h-4 text-emerald-400 animate-spin" style={{ animationDuration: '10s' }} />
             WORKSTATION HUD v2.0
           </div>
           <div className="flex justify-between gap-4">
-            <span>BOUNDS LOCK:</span>
-            <span className="text-[#006a4e] font-bold">ENGAGED</span>
+            <span>MAP CENTER:</span>
+            <span className="text-slate-200">{viewState.latitude.toFixed(4)}°N, {viewState.longitude.toFixed(4)}°E</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span>MAP LATITUDE:</span>
-            <span className="text-slate-200">{viewState.latitude.toFixed(5)}°N</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span>MAP LONGITUDE:</span>
-            <span className="text-slate-200">{viewState.longitude.toFixed(5)}°E</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span>SCALE LEVEL:</span>
+            <span>ZOOM LEVEL:</span>
             <span className="text-slate-200">{viewState.zoom.toFixed(1)}x</span>
           </div>
           <button
@@ -300,7 +490,7 @@ export default function MapCanvas() {
                 bearing: 0,
               })
             }
-            className="mt-2.5 w-full text-center py-1.5 bg-[#006a4e] text-white rounded font-sans font-bold hover:bg-emerald-700 transition"
+            className="mt-2 w-full text-center py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded font-sans font-bold transition text-xs"
           >
             CLAMP TO DELTA CENTER
           </button>

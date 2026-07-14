@@ -25,10 +25,41 @@ export interface RiskAnalysis {
   breakdown: RiskBreakdown;
 }
 
+export interface Flight {
+  icao24: string;
+  callsign: string;
+  origin: string;
+  altitude: number;
+  velocity: number;
+  lat: number;
+  lng: number;
+  onGround: boolean;
+}
+
+export interface MaritimeVessel {
+  mmsi: string;
+  name: string;
+  type: string;
+  lat: number;
+  lng: number;
+  speed: number;
+  course: number;
+  status: string;
+}
+
+export interface DSEXData {
+  price: number;
+  change: number;
+  changePercent: number;
+  history: number[];
+}
+
 interface MonitorState {
-  // Map View
+  // Map View & Theme
   viewState: ViewState;
   setViewState: (viewState: ViewState) => void;
+  mapMode: 'dark' | 'light';
+  setMapMode: (mode: 'dark' | 'light') => void;
 
   // Layer Visibility
   layersVisibility: {
@@ -36,8 +67,10 @@ interface MonitorState {
     criticalAssets: boolean;
     shippingCorridors: boolean;
     waterways: boolean;
+    weatherRadar: boolean;
+    windVectors: boolean;
   };
-  toggleLayer: (layerKey: 'incidents' | 'criticalAssets' | 'shippingCorridors' | 'waterways') => void;
+  toggleLayer: (layerKey: 'incidents' | 'criticalAssets' | 'shippingCorridors' | 'waterways' | 'weatherRadar' | 'windVectors') => void;
 
   // Active Telemetry/Operational Data
   incidents: DBIncident[];
@@ -46,6 +79,14 @@ interface MonitorState {
   setIncidents: (incidents: DBIncident[]) => void;
   setCriticalAssets: (assets: DBCriticalAsset[]) => void;
   setNews: (news: DBOperationalNews[]) => void;
+
+  // Live Feeds
+  flights: Flight[];
+  setFlights: (flights: Flight[]) => void;
+  maritimeVessels: MaritimeVessel[];
+  setMaritimeVessels: (vessels: MaritimeVessel[]) => void;
+  dsexIndex: DSEXData;
+  setDsexIndex: (dsex: DSEXData) => void;
 
   // Selection
   selectedFeature: any | null;
@@ -69,9 +110,19 @@ interface MonitorState {
   setByokKey: (key: string) => void;
   setByokProvider: (provider: 'groq' | 'openai' | 'openrouter') => void;
 
-  // Risk Score
+  // Risk Scores & Dials
   riskAnalysis: RiskAnalysis;
   setRiskAnalysis: (analysis: RiskAnalysis) => void;
+  environmentalRisk: number;
+  setEnvironmentalRisk: (val: number) => void;
+  infrastructureStatus: number;
+  setInfrastructureStatus: (val: number) => void;
+  publicIncidentRisk: number;
+  setPublicIncidentRisk: (val: number) => void;
+
+  // Rate Limiting Indicators
+  rateLimitWarning: boolean;
+  setRateLimitWarning: (val: boolean) => void;
 }
 
 export const useStore = create<MonitorState>((set) => ({
@@ -84,6 +135,8 @@ export const useStore = create<MonitorState>((set) => ({
     bearing: 0,
   },
   setViewState: (viewState) => set({ viewState }),
+  mapMode: 'dark',
+  setMapMode: (mapMode) => set({ mapMode }),
 
   // Layer toggles
   layersVisibility: {
@@ -91,6 +144,8 @@ export const useStore = create<MonitorState>((set) => ({
     criticalAssets: true,
     shippingCorridors: true,
     waterways: true,
+    weatherRadar: true,
+    windVectors: true,
   },
   toggleLayer: (layerKey) =>
     set((state) => ({
@@ -107,6 +162,23 @@ export const useStore = create<MonitorState>((set) => ({
   setIncidents: (incidents) => set({ incidents }),
   setCriticalAssets: (criticalAssets) => set({ criticalAssets }),
   setNews: (news) => set({ news }),
+
+  // Live Feeds
+  flights: [],
+  setFlights: (flights) => set({ flights }),
+  maritimeVessels: [
+    { mmsi: '405000123', name: 'MV MADHUMATI', type: 'Cargo', lat: 21.4, lng: 89.9, speed: 12.4, course: 180, status: 'Under Way' },
+    { mmsi: '405000456', name: 'BNS SHAPLA', type: 'Military', lat: 21.0, lng: 91.2, speed: 18.2, course: 95, status: 'Patrolling' },
+    { mmsi: '405000789', name: 'BULLDOG TUG', type: 'Tug', lat: 22.2, lng: 91.75, speed: 4.1, course: 220, status: 'Moored' },
+  ],
+  setMaritimeVessels: (maritimeVessels) => set({ maritimeVessels }),
+  dsexIndex: {
+    price: 5750.45,
+    change: 15.20,
+    changePercent: 0.26,
+    history: [5720, 5732, 5715, 5740, 5735, 5750],
+  },
+  setDsexIndex: (dsexIndex) => set({ dsexIndex }),
 
   // Selection Hover/Click Target
   selectedFeature: null,
@@ -145,6 +217,16 @@ export const useStore = create<MonitorState>((set) => ({
     },
   },
   setRiskAnalysis: (riskAnalysis) => set({ riskAnalysis }),
+
+  environmentalRisk: 42,
+  setEnvironmentalRisk: (environmentalRisk) => set({ environmentalRisk }),
+  infrastructureStatus: 85,
+  setInfrastructureStatus: (infrastructureStatus) => set({ infrastructureStatus }),
+  publicIncidentRisk: 30,
+  setPublicIncidentRisk: (publicIncidentRisk) => set({ publicIncidentRisk }),
+
+  rateLimitWarning: false,
+  setRateLimitWarning: (rateLimitWarning) => set({ rateLimitWarning }),
 }));
 
 export default useStore;
