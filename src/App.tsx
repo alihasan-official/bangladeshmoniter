@@ -167,19 +167,42 @@ export default function App() {
         // Periodically fluctuate weather sensor grids alongside the playback scrubbing
         updateWeatherStations();
 
-        // Fluctuate risk scores slightly dynamically to trigger recalculations
-        const delta = (Math.random() - 0.5) * 3;
-        const nextScore = Math.max(10, Math.min(95, riskAnalysis.riskScore + delta));
+        // Compute mathematical aggregate scores using actual client-side live metrics
+        // Environmental Risk is modeled from thermal fires, cyclones, and earthquakes
+        const fireFactor = Math.min(30, fires.length * 3);
+        const seismicFactor = Math.min(30, earthquakes.reduce((acc, curr) => acc + (curr.magnitude || 0), 0) * 4);
+        const envScore = Math.max(10, Math.min(100, Math.round(15 + fireFactor + seismicFactor)));
+
+        // Infrastructure Status is derived from damaged/alert critical asset node rates
+        const totalAssets = criticalAssets.length || 1;
+        const alertAssets = criticalAssets.filter(a => a.status === 'alert' || a.status === 'damaged').length;
+        const infraScore = Math.max(10, Math.min(100, Math.round((alertAssets / totalAssets) * 80 + 10)));
+
+        // Public Event / Logistics Instability Score modeled from OSINT counts & News volumes
+        const totalIncidents = incidents.length || 1;
+        const criticalIncidents = incidents.filter(i => i.severity === 'critical').length;
+        const publicScore = Math.max(10, Math.min(100, Math.round((criticalIncidents / totalIncidents) * 70 + 20)));
+
+        // General weighted instablity composite index
+        const nextScore = Math.round(envScore * 0.35 + infraScore * 0.3 + publicScore * 0.35);
+
+        const delta = nextScore - riskAnalysis.riskScore;
         const nextMean = riskAnalysis.mean + (nextScore - riskAnalysis.mean) * 0.05;
         const nextVariance = riskAnalysis.variance + Math.pow(nextScore - nextMean, 2) * 0.01;
 
         setRiskAnalysis({
           ...riskAnalysis,
-          riskScore: Math.round(nextScore),
+          riskScore: nextScore,
           mean: Number(nextMean.toFixed(2)),
           variance: Number(nextVariance.toFixed(2)),
           velocity: Number(delta.toFixed(2)),
-          trend: delta > 0.5 ? 'increasing' : delta < -0.5 ? 'decreasing' : 'stable',
+          trend: delta > 1.5 ? 'increasing' : delta < -1.5 ? 'decreasing' : 'stable',
+          breakdown: {
+            military: publicScore,
+            disaster: envScore,
+            geopolitical: riskAnalysis.breakdown.geopolitical,
+            hydrology: infraScore
+          }
         });
       }, 1000);
     }
@@ -419,7 +442,7 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
       {/* Left-Hand Collapsible Command Drawer */}
       <aside
-        className={`absolute top-16 left-4 z-20 w-[92%] sm:w-[24rem] max-h-[calc(100vh-18rem)] sm:max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl transition-all duration-300 flex flex-col ${
+        className={`absolute top-16 left-4 z-20 w-[92%] sm:w-[24rem] max-h-[calc(100vh-18rem)] sm:max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl smooth-sidebar-transition flex flex-col ${
           isCommandSheetOpen ? 'translate-x-0' : '-translate-x-[115%] sm:-translate-x-[26rem]'
         }`}
       >
@@ -1092,7 +1115,7 @@ Provide an elite strategic summary and tactical impact report. Keep it concise, 
 
       {/* Feature Details Inspector (Pops out from the right when an asset, incident or news item is clicked) */}
       {selectedFeature && (
-        <aside className="absolute top-16 right-4 z-10 w-[90%] sm:w-96 max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl flex flex-col glass-panel border border-brand-border">
+        <aside className="absolute top-16 right-4 z-10 w-[90%] sm:w-96 max-h-[calc(100vh-16rem)] rounded-lg shadow-2xl smooth-sidebar-transition flex flex-col glass-panel border border-brand-border">
           <div className="p-3 bg-[#12141a] border-b border-brand-border flex items-center justify-between rounded-t-lg">
             <span className="text-xs font-bold tracking-wider text-slate-300 uppercase">
               {selectedFeature.featureType} INSPECTOR LOG

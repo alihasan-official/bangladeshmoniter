@@ -197,12 +197,51 @@ function translateBanglaToEnglish(text: string): string {
   return translatedText;
 }
 
+// Dynamically populated dictionary fallback cache from bdapis
+let dynamicGeoCache: { [key: string]: { lat: number; lng: number } } = {};
+
+// Asynchronously pre-fetch dynamic geo-dictionary from bdapis endpoint on startup
+async function prefetchBdApisGeography() {
+  try {
+    const res = await fetch('https://bdapis.vercel.app/geo/v2.0/', { signal: AbortSignal.timeout(4000) });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.data)) {
+        data.data.forEach((item: any) => {
+          if (item.district && item.latitude && item.longitude) {
+            const name = item.district.toLowerCase();
+            dynamicGeoCache[name] = {
+              lat: parseFloat(item.latitude),
+              lng: parseFloat(item.longitude)
+            };
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('[BDAPIS] Failed fetching dynamic geotag dictionary. Reverting to local dictionary fallback.');
+  }
+}
+prefetchBdApisGeography();
+
 /**
  * Geocodes an article based on mentions of places in the title or description.
  * If no specific place is found, generates a deterministic layout coordinate inside Bangladesh.
  */
 function geocodeArticle(title: string, description: string, index: number): { lat: number; lng: number } {
   const combinedText = `${title} ${description}`.toLowerCase();
+
+  // Try dynamic cache matches first
+  for (const place of Object.keys(dynamicGeoCache)) {
+    if (combinedText.includes(place)) {
+      const offsetLat = (Math.random() - 0.5) * 0.015;
+      const offsetLng = (Math.random() - 0.5) * 0.015;
+      return {
+        lat: dynamicGeoCache[place].lat + offsetLat,
+        lng: dynamicGeoCache[place].lng + offsetLng
+      };
+    }
+  }
 
   // 1. Check for compound words & longest names first to prevent partial substring overlaps
   const sortedPlaces = Object.keys(BANGLADESH_LOCATIONS).sort((a, b) => b.length - a.length);
