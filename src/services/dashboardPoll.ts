@@ -3,6 +3,7 @@
 // Integrates mirror endpoints for the public api.worldmonitor.app services.
 
 import useStore, { Flight } from '../store/useStore';
+import { DBIncident } from './db';
 import { fetchLiveIntelligenceNews } from './rssAggregator';
 
 // Safe Response Validator
@@ -20,6 +21,23 @@ class ResponseValidator {
       data.chart.result[0].meta
     );
   }
+}
+
+// Bounding box for regional geofencing (South Asia)
+const SOUTH_ASIA_BOUNDS = {
+  minLat: 5.0,
+  maxLat: 36.0,
+  minLng: 68.0,
+  maxLng: 100.0,
+};
+
+function isWithinSouthAsia(lat: number, lng: number): boolean {
+  return (
+    lat >= SOUTH_ASIA_BOUNDS.minLat &&
+    lat <= SOUTH_ASIA_BOUNDS.maxLat &&
+    lng >= SOUTH_ASIA_BOUNDS.minLng &&
+    lng <= SOUTH_ASIA_BOUNDS.maxLng
+  );
 }
 
 /**
@@ -154,6 +172,82 @@ export async function pollMeteorologyAndRisk(): Promise<{ environmental: number;
 }
 
 /**
+ * Fetches recent earthquakes from the open-source World Monitor REST API
+ */
+export async function fetchWorldMonitorEarthquakes(): Promise<DBIncident[]> {
+  const endpoint = 'https://api.worldmonitor.app/api/seismology/v1/list-earthquakes';
+  try {
+    const res = await fetch(endpoint, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (!data || !Array.isArray(data.earthquakes)) return [];
+
+    const parsed: DBIncident[] = [];
+    for (const eq of data.earthquakes) {
+      const lat = eq.location?.latitude;
+      const lng = eq.location?.longitude;
+
+      if (typeof lat === 'number' && typeof lng === 'number' && isWithinSouthAsia(lat, lng)) {
+        parsed.push({
+          id: `wm-eq-${eq.id}`,
+          type: 'hazard',
+          title: `Seismic: M${eq.magnitude || 'N/A'} Earthquake`,
+          category: 'Weather/Cyclone/Flood',
+          severity: (eq.magnitude && eq.magnitude >= 6.0) ? 'critical' : (eq.magnitude && eq.magnitude >= 4.5) ? 'warning' : 'nominal',
+          description: `USGS logged seismology event. Magnitude: ${eq.magnitude || 'N/A'}. Depth: ${eq.depthKm || 'N/A'} km. Concern score: ${eq.concernScore || 'N/A'}. Concern level: ${eq.concernLevel || 'N/A'}.`,
+          lat,
+          lng,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+    return parsed;
+  } catch (err) {
+    console.warn('Silent fallback for World Monitor Earthquakes API:', err);
+    return [];
+  }
+}
+
+/**
+ * Fetches recent social unrest and civil demonstrations from World Monitor REST API
+ */
+export async function fetchWorldMonitorUnrest(): Promise<DBIncident[]> {
+  const endpoint = 'https://api.worldmonitor.app/api/unrest/v1/list-unrest-events';
+  try {
+    const res = await fetch(endpoint, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (!data || !Array.isArray(data.events)) return [];
+
+    const parsed: DBIncident[] = [];
+    for (const ev of data.events) {
+      const lat = ev.location?.latitude;
+      const lng = ev.location?.longitude;
+
+      if (typeof lat === 'number' && typeof lng === 'number' && isWithinSouthAsia(lat, lng)) {
+        parsed.push({
+          id: `wm-unrest-${ev.id}`,
+          type: 'incident',
+          title: `Unrest: ${ev.title || ev.eventType || 'Protest'}`,
+          category: 'Civil Defence/Police/Medical',
+          severity: ev.severity === 'SEVERITY_LEVEL_HIGH' ? 'critical' : ev.severity === 'SEVERITY_LEVEL_MEDIUM' ? 'warning' : 'nominal',
+          description: `${ev.summary || 'Social unrest or civil demonstration.'} Locality: ${ev.city || 'N/A'}, ${ev.region || 'N/A'}. Type: ${ev.eventType || 'N/A'}.`,
+          lat,
+          lng,
+          timestamp: ev.occurredAt ? new Date(ev.occurredAt).toISOString() : new Date().toISOString(),
+        });
+      }
+    }
+    return parsed;
+  } catch (err) {
+    console.warn('Silent fallback for World Monitor Unrest API:', err);
+    return [];
+  }
+}
+
+/**
  * Initiates the multi-threading polling schedules.
  */
 export function initializeDashboardPolling() {
@@ -191,6 +285,22 @@ export function initializeDashboardPolling() {
       }));
       store.setNews(mappedNews);
     }
+
+    // Fetch live intelligence events from World Monitor
+    const earthquakes = await fetchWorldMonitorEarthquakes();
+    const unrest = await fetchWorldMonitorUnrest();
+    if (earthquakes.length > 0 || unrest.length > 0) {
+      const mergedIncidents = [...store.incidents];
+      const existingIds = new Set(mergedIncidents.map(i => i.id));
+
+      for (const item of [...earthquakes, ...unrest]) {
+        if (!existingIds.has(item.id)) {
+          mergedIncidents.push(item);
+          existingIds.add(item.id);
+        }
+      }
+      store.setIncidents(mergedIncidents);
+    }
   };
 
   syncFeeds();
@@ -227,6 +337,22 @@ export function initializeDashboardPolling() {
         lng: item.lng,
       }));
       store.setNews(mappedNews);
+    }
+
+    // Periodically update World Monitor events
+    const earthquakes = await fetchWorldMonitorEarthquakes();
+    const unrest = await fetchWorldMonitorUnrest();
+    if (earthquakes.length > 0 || unrest.length > 0) {
+      const mergedIncidents = [...store.incidents];
+      const existingIds = new Set(mergedIncidents.map(i => i.id));
+
+      for (const item of [...earthquakes, ...unrest]) {
+        if (!existingIds.has(item.id)) {
+          mergedIncidents.push(item);
+          existingIds.add(item.id);
+        }
+      }
+      store.setIncidents(mergedIncidents);
     }
   }, 300000);
 
