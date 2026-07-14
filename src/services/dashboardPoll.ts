@@ -1,5 +1,6 @@
 // Centralized Polling Engine for Bangladesh Monitor v2.0
 // Synchronizes Yahoo Finance (DSEX Index), OpenSky Air Telemetry, meteorological readings, and updates Zustand.
+// Integrates mirror endpoints for the public api.worldmonitor.app services.
 
 import useStore, { Flight } from '../store/useStore';
 import { fetchLiveIntelligenceNews } from './rssAggregator';
@@ -28,8 +29,18 @@ class ResponseValidator {
 export async function pollOpenSkyFlights(): Promise<Flight[]> {
   const endpoint = 'https://opensky-network.org/api/states/all?lamin=20.5&lamax=26.6&lomin=88.0&lomax=92.8';
 
+  // Mirror endpoint pointing to public REST endpoints of the open-source engine
+  const mirrorEndpoint = 'https://api.worldmonitor.app/v1/aviation/states?lamin=20.5&lamax=26.6&lomin=88.0&lomax=92.8';
+
   try {
-    const res = await fetch(endpoint);
+    // Attempt handshake with public REST endpoints first, with graceful timeout fallbacks
+    let res: Response;
+    try {
+      res = await fetch(mirrorEndpoint, { signal: AbortSignal.timeout(5000) });
+    } catch {
+      res = await fetch(endpoint);
+    }
+
     if (res.status === 429) {
       useStore.getState().setRateLimitWarning(true);
       throw new Error('OpenSky rate limited. Swapping to offline simulation...');
